@@ -2,9 +2,10 @@ import SwiftUI
 
 struct StatusPopoverView: View {
     @ObservedObject var appDelegate: AppDelegate
+    @ObservedObject var usageData: UsageData
 
     var activeModelName: String {
-        switch appDelegate.usageData.activeModel {
+        switch usageData.activeModel {
         case .opus: return "claude-opus-4-5"
         case .sonnet: return "claude-sonnet-4-5"
         case .haiku: return "claude-haiku-4-5"
@@ -22,38 +23,38 @@ struct StatusPopoverView: View {
 
                 ScrollView {
                     VStack(spacing: 16) {
-                        // Usage cards
+                        // Usage cards (show remaining %)
                         UsageCardView(
                             title: "Current 5h Session",
                             subtitle: "",
-                            percentage: appDelegate.usageData.session.used,
-                            resetTime: appDelegate.usageData.session.resetTime,
+                            percentage: 100 - usageData.session.used,
+                            resetTime: usageData.session.resetTime,
                             gradient: Gradient(colors: [.cyan, .blue])
                         )
 
                         UsageCardView(
                             title: "Current Week (all models)",
                             subtitle: "",
-                            percentage: appDelegate.usageData.weekAll.used,
-                            resetTime: appDelegate.usageData.weekAll.resetTime,
+                            percentage: 100 - usageData.weekAll.used,
+                            resetTime: usageData.weekAll.resetTime,
                             gradient: Gradient(colors: [.purple, .pink])
                         )
 
                         UsageCardView(
                             title: "Current Week (Sonnet)",
                             subtitle: "",
-                            percentage: appDelegate.usageData.weekSonnet.used,
-                            resetTime: appDelegate.usageData.weekSonnet.resetTime,
+                            percentage: 100 - usageData.weekSonnet.used,
+                            resetTime: usageData.weekSonnet.resetTime,
                             gradient: Gradient(colors: [.orange, .red])
                         )
 
                         // Extra usage badge
-                        ExtraUsageBadge(isEnabled: appDelegate.usageData.extraUsage)
+                        ExtraUsageBadge(isEnabled: usageData.extraUsage)
 
                         // Status footer
                         StatusFooterView(
-                            lastUpdated: appDelegate.usageData.lastUpdated,
-                            status: appDelegate.usageData.status
+                            lastUpdated: usageData.lastUpdated,
+                            status: usageData.status
                         )
                     }
                     .padding(16)

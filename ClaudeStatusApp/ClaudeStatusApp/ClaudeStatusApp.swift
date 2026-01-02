@@ -164,7 +164,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         popover.behavior = .transient  // Closes when clicking outside
         popover.animates = true
 
-        let hostingController = NSHostingController(rootView: StatusPopoverView(appDelegate: self))
+        let hostingController = NSHostingController(rootView: StatusPopoverView(appDelegate: self, usageData: usageData))
         popover.contentViewController = hostingController
 
         // Ensure popover closes on outside click
@@ -211,10 +211,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
             let activeModel = self.usageData.activeModel
             let isConnected = self.usageData.status == .connected
 
-            // Show "--" when not connected, actual values when connected
-            let cs = isConnected ? "\(self.usageData.session.used)" : "--"
-            let cw = isConnected ? "\(self.usageData.weekAll.used)" : "--"
-            let cws = isConnected ? "\(self.usageData.weekSonnet.used)" : "--"
+            // Show "--" when not connected, remaining percentage when connected
+            let cs = isConnected ? "\(100 - self.usageData.session.used)" : "--"
+            let cw = isConnected ? "\(100 - self.usageData.weekAll.used)" : "--"
+            let cws = isConnected ? "\(100 - self.usageData.weekSonnet.used)" : "--"
 
             // Get model symbol (circled letter) - show empty circle when not connected
             let modelSymbol: String
