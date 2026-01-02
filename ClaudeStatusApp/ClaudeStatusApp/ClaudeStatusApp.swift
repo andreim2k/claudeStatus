@@ -42,7 +42,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
             // Create attributed string with different sizes
             let attributed = NSMutableAttributedString()
 
-            // Circled letter (much larger) - start with circled times since we're connecting
+            // Circled letter - larger size
             let circleLetter = NSAttributedString(string: "⊗ ", attributes: [
                 .font: NSFont.systemFont(ofSize: 24, weight: .regular),
                 .foregroundColor: NSColor.labelColor,
@@ -50,11 +50,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
             ])
             attributed.append(circleLetter)
 
-            // Usage text with middle-dot separators
-            let usageText = NSAttributedString(string: "--% -- · --% · --%", attributes: [
-                .font: NSFont.monospacedDigitSystemFont(ofSize: 12, weight: .medium),
-                .foregroundColor: NSColor.labelColor,
-                .baselineOffset: 0
+            // Usage text - match menu bar font
+            let usageText = NSAttributedString(string: "--% · -- ⋮ --% ⋮ --%", attributes: [
+                .font: NSFont.menuBarFont(ofSize: 0),
+                .foregroundColor: NSColor.labelColor
             ])
             attributed.append(usageText)
 
@@ -211,10 +210,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
             let activeModel = self.usageData.activeModel
             let isConnected = self.usageData.status == .connected
 
-            // Show "--" when not connected, remaining percentage when connected
-            let cs = isConnected ? "\(100 - self.usageData.session.used)" : "--"
-            let cw = isConnected ? "\(100 - self.usageData.weekAll.used)" : "--"
-            let cws = isConnected ? "\(100 - self.usageData.weekSonnet.used)" : "--"
+            // Show "--" when not connected, used percentage when connected
+            let cs = isConnected ? "\(self.usageData.session.used)" : "--"
+            let cw = isConnected ? "\(self.usageData.weekAll.used)" : "--"
+            let cws = isConnected ? "\(self.usageData.weekSonnet.used)" : "--"
 
             // Get model symbol (circled letter) - show empty circle when not connected
             let modelSymbol: String
@@ -231,7 +230,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
             // Create attributed string with different sizes
             let attributed = NSMutableAttributedString()
 
-            // Circled letter (much larger, 24pt)
+            // Circled letter - larger size
             let circleLetter = NSAttributedString(string: "\(modelSymbol) ", attributes: [
                 .font: NSFont.systemFont(ofSize: 24, weight: .regular),
                 .foregroundColor: NSColor.labelColor,
@@ -242,11 +241,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
             // Get session expiry time
             let expiryTime = self.getSessionExpiryTime()
 
-            // Usage text with middle-dot separators
-            let usageText = NSAttributedString(string: "\(cs)% \(expiryTime) · \(cw)% · \(cws)%", attributes: [
-                .font: NSFont.monospacedDigitSystemFont(ofSize: 12, weight: .medium),
-                .foregroundColor: NSColor.labelColor,
-                .baselineOffset: 0
+            // Usage text - match menu bar font
+            let usageText = NSAttributedString(string: "\(cs)% · \(expiryTime) ⋮ \(cw)% ⋮ \(cws)%", attributes: [
+                .font: NSFont.menuBarFont(ofSize: 0),
+                .foregroundColor: NSColor.labelColor
             ])
             attributed.append(usageText)
 

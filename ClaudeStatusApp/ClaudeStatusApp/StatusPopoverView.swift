@@ -23,27 +23,27 @@ struct StatusPopoverView: View {
 
                 ScrollView {
                     VStack(spacing: 16) {
-                        // Usage cards (show remaining %)
+                        // Usage cards (show used %)
                         UsageCardView(
                             title: "Current 5h Session",
-                            subtitle: "",
-                            percentage: 100 - usageData.session.used,
+                            subtitle: "used",
+                            percentage: usageData.session.used,
                             resetTime: usageData.session.resetTime,
                             gradient: Gradient(colors: [.cyan, .blue])
                         )
 
                         UsageCardView(
                             title: "Current Week (all models)",
-                            subtitle: "",
-                            percentage: 100 - usageData.weekAll.used,
+                            subtitle: "used",
+                            percentage: usageData.weekAll.used,
                             resetTime: usageData.weekAll.resetTime,
                             gradient: Gradient(colors: [.purple, .pink])
                         )
 
                         UsageCardView(
                             title: "Current Week (Sonnet)",
-                            subtitle: "",
-                            percentage: 100 - usageData.weekSonnet.used,
+                            subtitle: "used",
+                            percentage: usageData.weekSonnet.used,
                             resetTime: usageData.weekSonnet.resetTime,
                             gradient: Gradient(colors: [.orange, .red])
                         )
