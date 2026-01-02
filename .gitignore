@@ -1,0 +1,16 @@
+# Build artifacts
+*.app/
+build/
+
+# Claude settings (may contain tokens)
+.claude/
+
+# Temp files
+*.ico
+*-temp.png
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+venv/
