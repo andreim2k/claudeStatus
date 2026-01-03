@@ -36,18 +36,17 @@ A native macOS menu bar app that displays your Claude AI usage statistics in rea
 ## Building
 
 ```bash
-cd ClaudeStatusApp
 ./build.sh
 ```
 
 ## Installation
 
 ```bash
-cp -r "Claude Status.app" ~/Applications/
-open ~/Applications/"Claude Status.app"
+./install.sh                # Install to /Applications
+./install_autostart.sh      # Start at login (optional)
 ```
 
-To run at startup, add the app to System Settings > General > Login Items.
+To uninstall auto-start: `./uninstall_autostart.sh`
 
 ## How It Works
 

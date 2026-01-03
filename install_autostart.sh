@@ -1,16 +1,21 @@
 #!/bin/bash
-# Install LaunchAgent for auto-start
+# Install LaunchAgent to start Claude Status at login
 
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+APP_NAME="Claude Status"
+APP_PATH="/Applications/$APP_NAME.app"
 PLIST_NAME="com.claude.status.plist"
 LAUNCH_AGENTS_DIR="$HOME/Library/LaunchAgents"
 
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "  Installing Auto-Start for Claude Status"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo ""
+echo "Installing auto-start for Claude Status..."
 
-# Create LaunchAgents directory if it doesn't exist
+# Check if app is installed
+if [ ! -d "$APP_PATH" ]; then
+    echo "Error: $APP_NAME.app not found in /Applications"
+    echo "Run ./install.sh first"
+    exit 1
+fi
+
+# Create LaunchAgents directory if needed
 mkdir -p "$LAUNCH_AGENTS_DIR"
 
 # Unload existing if present
@@ -26,19 +31,14 @@ cat > "$LAUNCH_AGENTS_DIR/$PLIST_NAME" << EOF
     <string>com.claude.status</string>
     <key>ProgramArguments</key>
     <array>
-        <string>$SCRIPT_DIR/venv/bin/python3</string>
-        <string>$SCRIPT_DIR/claude_status.py</string>
+        <string>/usr/bin/open</string>
+        <string>-a</string>
+        <string>$APP_PATH</string>
     </array>
-    <key>WorkingDirectory</key>
-    <string>$SCRIPT_DIR</string>
     <key>RunAtLoad</key>
     <true/>
     <key>KeepAlive</key>
     <false/>
-    <key>StandardOutPath</key>
-    <string>/tmp/claude-status.log</string>
-    <key>StandardErrorPath</key>
-    <string>/tmp/claude-status-error.log</string>
 </dict>
 </plist>
 EOF
@@ -46,10 +46,8 @@ EOF
 # Load the launch agent
 launchctl load "$LAUNCH_AGENTS_DIR/$PLIST_NAME"
 
-echo "✓ Auto-start installed!"
 echo ""
-echo "The app will now start automatically when you log in."
+echo "Auto-start installed!"
+echo "Claude Status will now start automatically when you log in."
 echo ""
-echo "To disable auto-start, run:"
-echo "  ./uninstall_autostart.sh"
-echo ""
+echo "To disable: ./uninstall_autostart.sh"
