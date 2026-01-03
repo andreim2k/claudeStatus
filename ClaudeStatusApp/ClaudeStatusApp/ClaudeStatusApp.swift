@@ -210,11 +210,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
             let activeModel = self.usageData.activeModel
             let isConnected = self.usageData.status == .connected
 
-            // Show "--" when not connected, used percentage when connected
-            let cs = isConnected ? "\(self.usageData.session.used)" : "--"
-            let cw = isConnected ? "\(self.usageData.weekAll.used)" : "--"
-            let cws = isConnected ? "\(self.usageData.weekSonnet.used)" : "--"
-
             // Get model symbol (circled letter) - show empty circle when not connected
             let modelSymbol: String
             if isConnected {
@@ -241,8 +236,22 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
             // Get session expiry time
             let expiryTime = self.getSessionExpiryTime()
 
+            // Build usage text based on model
+            // Sonnet: show session %, time, week all %, sonnet weekly %
+            // Opus/Haiku: show session %, time, week all %
+            let usageString: String
+            let sessionPct = isConnected ? "\(self.usageData.session.used)" : "--"
+            let weekAllPct = isConnected ? "\(self.usageData.weekAll.used)" : "--"
+
+            if activeModel == .sonnet {
+                let sonnetPct = isConnected ? "\(self.usageData.weekSonnet.used)" : "--"
+                usageString = "\(sessionPct)% · \(expiryTime) ⋮ \(weekAllPct)% ⋮ \(sonnetPct)%"
+            } else {
+                usageString = "\(sessionPct)% · \(expiryTime) ⋮ \(weekAllPct)%"
+            }
+
             // Usage text - match menu bar font
-            let usageText = NSAttributedString(string: "\(cs)% · \(expiryTime) ⋮ \(cw)% ⋮ \(cws)%", attributes: [
+            let usageText = NSAttributedString(string: usageString, attributes: [
                 .font: NSFont.menuBarFont(ofSize: 0),
                 .foregroundColor: NSColor.labelColor
             ])
