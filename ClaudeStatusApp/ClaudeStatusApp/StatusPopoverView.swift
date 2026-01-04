@@ -12,14 +12,31 @@ struct StatusPopoverView: View {
         }
     }
 
+    var modelSpecificTitle: String {
+        // Always show Sonnet for Max (API returns seven_day_sonnet)
+        return "Current Week (Sonnet)"
+    }
+
+    var modelSpecificUsage: Int {
+        // Always show Sonnet usage for Max
+        return usageData.weekSonnet.used
+    }
+
+    var modelSpecificResetTime: String {
+        return usageData.weekSonnet.resetTime  // Same reset time for all models
+    }
+
     var body: some View {
         ZStack {
             // Liquid glass background
             LiquidGlassBackground()
 
             VStack(spacing: 0) {
-                // Header with model indicator
-                HeaderView(currentModel: activeModelName)
+                // Header with model and subscription indicator
+                HeaderView(
+                    currentModel: activeModelName,
+                    subscriptionType: usageData.subscriptionType
+                )
 
                 ScrollView {
                     VStack(spacing: 16) {
@@ -40,16 +57,29 @@ struct StatusPopoverView: View {
                             gradient: Gradient(colors: [.purple, .pink])
                         )
 
-                        UsageCardView(
-                            title: "Current Week (Sonnet)",
-                            subtitle: "used",
-                            percentage: usageData.weekSonnet.used,
-                            resetTime: usageData.weekSonnet.resetTime,
-                            gradient: Gradient(colors: [.orange, .red])
-                        )
+                        // Only show model-specific weekly limit for Max plan
+                        if usageData.subscriptionType.hasSeparateModelLimits {
+                            UsageCardView(
+                                title: modelSpecificTitle,
+                                subtitle: "used",
+                                percentage: modelSpecificUsage,
+                                resetTime: modelSpecificResetTime,
+                                gradient: Gradient(colors: [.orange, .red])
+                            )
+                        }
 
-                        // Extra usage badge
-                        ExtraUsageBadge(isEnabled: usageData.extraUsage)
+                        // Extra usage - show as card if enabled, otherwise badge
+                        if usageData.extraUsage {
+                            UsageCardView(
+                                title: "Extra Usage",
+                                subtitle: "$\(String(format: "%.2f", usageData.extraUsageAmount))",
+                                percentage: usageData.extraUsagePercent,
+                                resetTime: "Pay-per-use beyond plan limits",
+                                gradient: Gradient(colors: [.yellow, .orange])
+                            )
+                        } else {
+                            ExtraUsageBadge(isEnabled: usageData.extraUsage, amount: usageData.extraUsageAmount)
+                        }
 
                         // Status footer
                         StatusFooterView(
@@ -72,7 +102,7 @@ struct StatusPopoverView: View {
                 .background(.ultraThinMaterial)
             }
         }
-        .frame(width: 320, height: 650)
+        .frame(width: 320, height: usageData.subscriptionType.hasSeparateModelLimits ? 650 : 550)
     }
 }
 
@@ -136,6 +166,15 @@ struct LiquidBlob: View {
 
 struct HeaderView: View {
     let currentModel: String
+    let subscriptionType: SubscriptionType
+
+    var subscriptionColor: Color {
+        switch subscriptionType {
+        case .max: return .purple
+        case .pro: return .blue
+        case .free: return .gray
+        }
+    }
 
     var body: some View {
         VStack(spacing: 8) {
@@ -163,6 +202,18 @@ struct HeaderView: View {
                     .fontWeight(.semibold)
 
                 Spacer()
+
+                // Subscription badge
+                Text(subscriptionType.displayName)
+                    .font(.caption)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 3)
+                    .background(
+                        Capsule()
+                            .fill(subscriptionColor)
+                    )
             }
 
             // Current model indicator
@@ -304,14 +355,23 @@ struct GlassProgressBar: View {
 
 struct ExtraUsageBadge: View {
     let isEnabled: Bool
+    let amount: Double
 
     var body: some View {
         HStack {
             Image(systemName: isEnabled ? "bolt.fill" : "bolt.slash")
                 .foregroundColor(isEnabled ? .yellow : .gray)
 
-            Text("Extra Usage")
-                .font(.subheadline)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Extra Usage")
+                    .font(.subheadline)
+
+                if isEnabled && amount > 0 {
+                    Text("$\(String(format: "%.2f", amount))")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            }
 
             Spacer()
 

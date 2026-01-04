@@ -17,9 +17,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     var popover: NSPopover!
     @Published var usageData = UsageData()
     var updateTimer: Timer?
-    var credentialsCache: OAuthCredentials?
-    var credentialsCacheTime: Date?
     var sessionResetTimestamp: String?  // Store raw timestamp for menu bar display
+    var weeklyResetTimestamp: String?   // Store raw timestamp for weekly reset display
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
@@ -63,6 +62,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
 
     // Detect current model from Claude Code settings or subscription type
     func detectCurrentModel() {
+        // ALWAYS detect subscription type first
+        detectSubscriptionType()
+
+        // Then try to detect model from settings
         // First check Claude Code settings.json
         let settingsPath = NSHomeDirectory() + "/.claude/settings.json"
         if let settingsData = try? Data(contentsOf: URL(fileURLWithPath: settingsPath)),
@@ -102,12 +105,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
             }
         }
 
-        // Final fallback: detect from subscription type
-        detectModelFromSubscription()
+        // Final fallback: set default model based on subscription
+        setDefaultModelForSubscription()
     }
 
-    // Detect default model based on subscription type from keychain
-    func detectModelFromSubscription() {
+    // Detect subscription type from keychain
+    func detectSubscriptionType() {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: "Claude Code-credentials",
@@ -122,22 +125,37 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
               let data = result as? Data,
               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               let oauth = json["claudeAiOauth"] as? [String: Any] else {
-            usageData.activeModel = .opus  // Default fallback
+            usageData.subscriptionType = .free
             return
         }
 
-        // Check subscription type to determine default model
-        if let subscriptionType = oauth["subscriptionType"] as? String {
-            switch subscriptionType.lowercased() {
+        // Detect subscription type
+        if let subType = oauth["subscriptionType"] as? String {
+            switch subType.lowercased() {
             case "max":
-                usageData.activeModel = .opus  // Max users default to Opus
+                usageData.subscriptionType = .max
             case "pro":
-                usageData.activeModel = .sonnet  // Pro users default to Sonnet
+                usageData.subscriptionType = .pro
             default:
-                usageData.activeModel = .sonnet  // Free/other default to Sonnet
+                usageData.subscriptionType = .free
             }
         } else {
-            usageData.activeModel = .opus
+            usageData.subscriptionType = .free
+        }
+    }
+
+    // Set default model based on subscription
+    func setDefaultModelForSubscription() {
+        // Free: Sonnet only (no Opus access)
+        // Pro: Sonnet default (but can use Opus)
+        // Max: Opus is the default
+        switch usageData.subscriptionType {
+        case .free:
+            usageData.activeModel = .sonnet  // Only Sonnet available
+        case .pro:
+            usageData.activeModel = .sonnet  // Sonnet is default for Pro
+        case .max:
+            usageData.activeModel = .opus    // Opus is default for Max
         }
     }
 
@@ -235,19 +253,24 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
 
             // Get session expiry time
             let expiryTime = self.getSessionExpiryTime()
+            let weeklyExpiryTime = self.getWeeklyExpiryTime()
+            let subscriptionType = self.usageData.subscriptionType
 
-            // Build usage text based on model
-            // Sonnet: show session %, time, week all %, sonnet weekly %
-            // Opus/Haiku: show session %, time, week all %
+            // Build usage text based on subscription type and model
+            // Max with separate model limits: show session %, time, week all %, model weekly %, weekly expiry time
+            // Pro/Free (no separate model limits): show session %, time, week all %, weekly expiry time
             let usageString: String
             let sessionPct = isConnected ? "\(self.usageData.session.used)" : "--"
             let weekAllPct = isConnected ? "\(self.usageData.weekAll.used)" : "--"
 
-            if activeModel == .sonnet {
+            // For Max plan: only show Sonnet % if activeModel is Sonnet
+            // For Opus/Haiku: don't show model-specific % (it's Sonnet data, not relevant)
+            if subscriptionType.hasSeparateModelLimits && activeModel == .sonnet {
                 let sonnetPct = isConnected ? "\(self.usageData.weekSonnet.used)" : "--"
-                usageString = "\(sessionPct)% · \(expiryTime) ⋮ \(weekAllPct)% ⋮ \(sonnetPct)%"
+                usageString = "\(sessionPct)% · \(expiryTime) ⋮ \(weekAllPct)% ⋮ \(sonnetPct)% · \(weeklyExpiryTime)"
             } else {
-                usageString = "\(sessionPct)% · \(expiryTime) ⋮ \(weekAllPct)%"
+                // Pro/Free OR Max with Opus/Haiku: don't show model-specific %
+                usageString = "\(sessionPct)% · \(expiryTime) ⋮ \(weekAllPct)% · \(weeklyExpiryTime)"
             }
 
             // Usage text - match menu bar font
@@ -278,12 +301,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     }
 
     func getCredentials() -> OAuthCredentials? {
-        if let cache = credentialsCache,
-           let cacheTime = credentialsCacheTime,
-           Date().timeIntervalSince(cacheTime) < 300 {
-            return cache
-        }
-
+        // NO CACHING - always fetch fresh from keychain
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: "Claude Code-credentials",
@@ -303,10 +321,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
             return nil
         }
 
-        let creds = OAuthCredentials(accessToken: accessToken, expiresAt: expiresAt / 1000)
-        credentialsCache = creds
-        credentialsCacheTime = Date()
-        return creds
+        return OAuthCredentials(accessToken: accessToken, expiresAt: expiresAt / 1000)
     }
 
     func fetchUsageDataAsync() {
@@ -323,7 +338,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
 
         if Date().timeIntervalSince1970 > creds.expiresAt {
             DispatchQueue.main.async { self.usageData.status = .tokenExpired }
-            credentialsCache = nil
             return
         }
 
@@ -353,7 +367,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
                     self.usageData.status = .connected
                 } else if httpResponse.statusCode == 401 {
                     self.usageData.status = .authError
-                    self.credentialsCache = nil
                 } else {
                     self.usageData.status = .apiError
                 }
@@ -380,6 +393,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
             if let utilization = sevenDay["utilization"] as? Double {
                 usageData.weekAll.used = Int(utilization)
             }
+            weeklyResetTimestamp = sevenDay["resets_at"] as? String  // Store for menu bar
             usageData.weekAll.resetTime = formatWeeklyResetTime(sevenDay["resets_at"] as? String)
         }
 
@@ -413,6 +427,16 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
 
         if let extraUsage = json["extra_usage"] as? [String: Any] {
             usageData.extraUsage = extraUsage["is_enabled"] as? Bool ?? false
+            usageData.extraUsageAmount = extraUsage["amount_usd"] as? Double ?? 0.0
+            if let utilization = extraUsage["utilization"] as? Double {
+                usageData.extraUsagePercent = Int(utilization)
+            } else {
+                usageData.extraUsagePercent = 0
+            }
+        } else {
+            usageData.extraUsage = false
+            usageData.extraUsageAmount = 0.0
+            usageData.extraUsagePercent = 0
         }
     }
 
@@ -493,10 +517,64 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         }
     }
 
+    // Get remaining time until weekly reset (e.g., "3d", ">2h", "<3h", "2h", ">45m", "<46m")
+    func getWeeklyExpiryTime() -> String {
+        guard let timestamp = weeklyResetTimestamp else { return "--" }
+
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+
+        guard let resetDate = formatter.date(from: timestamp) ?? ISO8601DateFormatter().date(from: timestamp) else {
+            return "--"
+        }
+
+        let now = Date()
+        let remaining = resetDate.timeIntervalSince(now)
+
+        if remaining <= 0 {
+            return "0m"
+        }
+
+        let days = Int(remaining) / 86400
+        let hours = (Int(remaining) % 86400) / 3600
+        let minutes = (Int(remaining) % 3600) / 60
+        let seconds = Int(remaining) % 60
+
+        // Show days if >= 1 day remaining (with same >/</ logic based on hours)
+        if days >= 1 {
+            if hours == 0 {
+                return "\(days)d"        // Exactly X days
+            } else if hours < 12 {
+                return ">\(days)d"       // More than X days (just passed the day)
+            } else {
+                return "<\(days + 1)d"   // Less than X+1 days (approaching next day)
+            }
+        }
+
+        // Show hours if >= 1 hour remaining
+        if hours >= 1 {
+            if minutes == 0 {
+                return "\(hours)h"       // Exactly X hours
+            } else if minutes < 30 {
+                return ">\(hours)h"      // More than X hours (just passed the hour)
+            } else {
+                return "<\(hours + 1)h"  // Less than X+1 hours (approaching next hour)
+            }
+        }
+
+        // Show minutes if < 1 hour remaining (with same >/</ logic based on seconds)
+        if seconds == 0 {
+            return "\(minutes)m"         // Exactly X minutes
+        } else if seconds < 30 {
+            return ">\(minutes)m"        // More than X minutes (just passed the minute)
+        } else {
+            return "<\(minutes + 1)m"    // Less than X+1 minutes (approaching next minute)
+        }
+    }
+
     func manualRefresh() {
         statusItem.button?.title = "◌ ..."
-        credentialsCache = nil
-        detectCurrentModel()  // Re-detect model on refresh
+        detectCurrentModel()  // Re-detect model and subscription on refresh
         fetchUsageDataAsync()
     }
 }
