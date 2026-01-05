@@ -7,21 +7,22 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		AAA00001 /* ClaudeStatusApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAA00011 /* ClaudeStatusApp.swift */; };
-		AAA00002 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAA00012 /* Models.swift */; };
-		AAA00003 /* StatusPopoverView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAA00013 /* StatusPopoverView.swift */; };
+		AAA00001 /* ClaudeMenuBarApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAA00002 /* ClaudeMenuBarApp.swift */; };
+		AAA00020 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAA00021 /* Models.swift */; };
+		AAA00022 /* StatusPopoverView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAA00023 /* StatusPopoverView.swift */; };
+		AAA00024 /* claude-icon@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = AAA00025 /* claude-icon@2x.png */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		AAA00010 /* Claude Status.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Claude Status.app"; sourceTree = BUILT_PRODUCTS_DIR; };
-		AAA00011 /* ClaudeStatusApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeStatusApp.swift; sourceTree = "<group>"; };
-		AAA00012 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
-		AAA00013 /* StatusPopoverView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusPopoverView.swift; sourceTree = "<group>"; };
-		AAA00014 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		AAA00002 /* ClaudeMenuBarApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeMenuBarApp.swift; sourceTree = "<group>"; };
+		AAA00003 /* ClaudeMenuBar.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ClaudeMenuBar.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		AAA00021 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
+		AAA00023 /* StatusPopoverView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusPopoverView.swift; sourceTree = "<group>"; };
+		AAA00025 /* claude-icon@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "claude-icon@2x.png"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		AAA00020 /* Frameworks */ = {
+		AAA00004 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -30,30 +31,41 @@
 		};
 /* End PBXFrameworksBuildPhase section */
 
+/* Begin PBXResourcesBuildPhase section */
+		AAA00030 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AAA00024 /* claude-icon@2x.png in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
 /* Begin PBXGroup section */
-		AAA00030 = {
+		AAA00005 = {
 			isa = PBXGroup;
 			children = (
-				AAA00031 /* ClaudeStatusApp */,
-				AAA00032 /* Products */,
+				AAA00006 /* ClaudeMenuBar */,
+				AAA00007 /* Products */,
 			);
 			sourceTree = "<group>";
 		};
-		AAA00031 /* ClaudeStatusApp */ = {
+		AAA00006 /* ClaudeMenuBar */ = {
 			isa = PBXGroup;
 			children = (
-				AAA00011 /* ClaudeStatusApp.swift */,
-				AAA00012 /* Models.swift */,
-				AAA00013 /* StatusPopoverView.swift */,
-				AAA00014 /* Info.plist */,
+				AAA00002 /* ClaudeMenuBarApp.swift */,
+				AAA00021 /* Models.swift */,
+				AAA00023 /* StatusPopoverView.swift */,
+				AAA00025 /* claude-icon@2x.png */,
 			);
-			path = ClaudeStatusApp;
+			path = ClaudeMenuBar;
 			sourceTree = "<group>";
 		};
-		AAA00032 /* Products */ = {
+		AAA00007 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				AAA00010 /* Claude Status.app */,
+				AAA00003 /* ClaudeMenuBar.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -61,38 +73,34 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		AAA00040 /* ClaudeStatusApp */ = {
+		AAA00008 /* ClaudeMenuBar */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = AAA00060 /* Build configuration list for PBXNativeTarget "ClaudeStatusApp" */;
+			buildConfigurationList = AAA00009 /* Build configuration list for PBXNativeTarget "ClaudeMenuBar" */;
 			buildPhases = (
-				AAA00050 /* Sources */,
-				AAA00020 /* Frameworks */,
+				AAA00010 /* Sources */,
+				AAA00004 /* Frameworks */,
+				AAA00030 /* Resources */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 			);
-			name = ClaudeStatusApp;
-			productName = ClaudeStatusApp;
-			productReference = AAA00010 /* Claude Status.app */;
+			name = ClaudeMenuBar;
+			productName = ClaudeMenuBar;
+			productReference = AAA00003 /* ClaudeMenuBar.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
-		AAA00000 /* Project object */ = {
+		AAA00011 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 1500;
-				LastUpgradeCheck = 1500;
-				TargetAttributes = {
-					AAA00040 = {
-						CreatedOnToolsVersion = 15.0;
-					};
-				};
+				LastSwiftUpdateCheck = 1600;
+				LastUpgradeCheck = 1600;
 			};
-			buildConfigurationList = AAA00070 /* Build configuration list for PBXProject "ClaudeStatusApp" */;
+			buildConfigurationList = AAA00012 /* Build configuration list for PBXProject "ClaudeMenuBar" */;
 			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
@@ -100,90 +108,35 @@
 				en,
 				Base,
 			);
-			mainGroup = AAA00030;
-			productRefGroup = AAA00032 /* Products */;
+			mainGroup = AAA00005;
+			productRefGroup = AAA00007 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				AAA00040 /* ClaudeStatusApp */,
+				AAA00008 /* ClaudeMenuBar */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXSourcesBuildPhase section */
-		AAA00050 /* Sources */ = {
+		AAA00010 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				AAA00001 /* ClaudeStatusApp.swift in Sources */,
-				AAA00002 /* Models.swift in Sources */,
-				AAA00003 /* StatusPopoverView.swift in Sources */,
+				AAA00001 /* ClaudeMenuBarApp.swift in Sources */,
+				AAA00020 /* Models.swift in Sources */,
+				AAA00022 /* StatusPopoverView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
-		AAA00061 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_IDENTITY = "-";
-				CODE_SIGN_STYLE = Automatic;
-				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
-				ENABLE_HARDENED_RUNTIME = YES;
-				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = ClaudeStatusApp/Info.plist;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
-				INFOPLIST_KEY_LSUIElement = YES;
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/../Frameworks",
-				);
-				MACOSX_DEPLOYMENT_TARGET = 13.0;
-				MARKETING_VERSION = 1.0.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.claude.status;
-				PRODUCT_NAME = "Claude Status";
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
-			};
-			name = Debug;
-		};
-		AAA00062 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_IDENTITY = "-";
-				CODE_SIGN_STYLE = Automatic;
-				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
-				ENABLE_HARDENED_RUNTIME = YES;
-				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = ClaudeStatusApp/Info.plist;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
-				INFOPLIST_KEY_LSUIElement = YES;
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/../Frameworks",
-				);
-				MACOSX_DEPLOYMENT_TARGET = 13.0;
-				MARKETING_VERSION = 1.0.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.claude.status;
-				PRODUCT_NAME = "Claude Status";
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
-			};
-			name = Release;
-		};
-		AAA00071 /* Debug */ = {
+		AAA00013 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
@@ -216,7 +169,7 @@
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
-				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_OPTIMIZATION_LEVEL = 0;
@@ -230,20 +183,21 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
 			name = Debug;
 		};
-		AAA00072 /* Release */ = {
+		AAA00014 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
@@ -276,7 +230,7 @@
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
@@ -284,37 +238,86 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = macosx;
 				SWIFT_COMPILATION_MODE = wholemodule;
-				SWIFT_OPTIMIZATION_LEVEL = "-O";
+			};
+			name = Release;
+		};
+		AAA00015 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = "";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_LSUIElement = YES;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.claude.menubar;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		AAA00016 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = "";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_LSUIElement = YES;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.claude.menubar;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
 			};
 			name = Release;
 		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		AAA00060 /* Build configuration list for PBXNativeTarget "ClaudeStatusApp" */ = {
+		AAA00009 /* Build configuration list for PBXNativeTarget "ClaudeMenuBar" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				AAA00061 /* Debug */,
-				AAA00062 /* Release */,
+				AAA00015 /* Debug */,
+				AAA00016 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		AAA00070 /* Build configuration list for PBXProject "ClaudeStatusApp" */ = {
+		AAA00012 /* Build configuration list for PBXProject "ClaudeMenuBar" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				AAA00071 /* Debug */,
-				AAA00072 /* Release */,
+				AAA00013 /* Debug */,
+				AAA00014 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
-	rootObject = AAA00000 /* Project object */;
+	rootObject = AAA00011 /* Project object */;
 }
