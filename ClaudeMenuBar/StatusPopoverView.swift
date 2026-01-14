@@ -1,4 +1,5 @@
 import SwiftUI
+import Darwin
 
 struct StatusPopoverView: View {
     @ObservedObject var appDelegate: AppDelegate
@@ -28,8 +29,8 @@ struct StatusPopoverView: View {
 
     var body: some View {
         ZStack {
-            // Liquid glass background
-            LiquidGlassBackground()
+            // Liquid glass background (pauses animations when popover is hidden)
+            LiquidGlassBackground(isVisible: appDelegate.isPopoverVisible)
 
             VStack(spacing: 0) {
                 // Header with model and subscription indicator
@@ -94,7 +95,7 @@ struct StatusPopoverView: View {
                 VStack(spacing: 0) {
                     Divider()
                     ActionButtonsView(
-                        onRefresh: { appDelegate.manualRefresh() },
+                        onRefresh: { [weak appDelegate] in appDelegate?.manualRefresh() },
                         onQuit: { NSApp.terminate(nil) }
                     )
                     .padding(12)
@@ -102,13 +103,15 @@ struct StatusPopoverView: View {
                 .background(.ultraThinMaterial)
             }
         }
-        .frame(width: 320, height: usageData.subscriptionType.hasSeparateModelLimits ? 650 : 550)
+        .frame(width: 320, height: usageData.subscriptionType.hasSeparateModelLimits ? 750 : 650)
     }
 }
 
 // MARK: - Liquid Glass Background
 
 struct LiquidGlassBackground: View {
+    let isVisible: Bool  // Control animations based on visibility
+
     var body: some View {
         ZStack {
             // Base gradient
@@ -121,16 +124,16 @@ struct LiquidGlassBackground: View {
                 endPoint: .bottomTrailing
             )
 
-            // Animated blobs for liquid effect
+            // Animated blobs for liquid effect (only animate when visible)
             GeometryReader { geo in
                 ZStack {
-                    LiquidBlob(color: .cyan.opacity(0.15), size: 150)
+                    LiquidBlob(color: .cyan.opacity(0.15), size: 150, isAnimating: isVisible)
                         .offset(x: -50, y: -30)
 
-                    LiquidBlob(color: .purple.opacity(0.12), size: 180)
+                    LiquidBlob(color: .purple.opacity(0.12), size: 180, isAnimating: isVisible)
                         .offset(x: geo.size.width - 80, y: 100)
 
-                    LiquidBlob(color: .pink.opacity(0.1), size: 120)
+                    LiquidBlob(color: .pink.opacity(0.1), size: 120, isAnimating: isVisible)
                         .offset(x: 30, y: geo.size.height - 150)
                 }
             }
@@ -145,6 +148,7 @@ struct LiquidGlassBackground: View {
 struct LiquidBlob: View {
     let color: Color
     let size: CGFloat
+    let isAnimating: Bool  // Control animation state
     @State private var animate = false
 
     var body: some View {
@@ -154,11 +158,17 @@ struct LiquidBlob: View {
             .blur(radius: 40)
             .scaleEffect(animate ? 1.1 : 0.9)
             .animation(
-                .easeInOut(duration: 4)
-                .repeatForever(autoreverses: true),
+                isAnimating ? .easeInOut(duration: 4).repeatForever(autoreverses: true) : .default,
                 value: animate
             )
-            .onAppear { animate = true }
+            .onChange(of: isAnimating) { _, newValue in
+                // Only animate when visible to save CPU/GPU resources
+                animate = newValue
+            }
+            .onAppear {
+                // Start animation only if visible
+                animate = isAnimating
+            }
     }
 }
 
@@ -462,6 +472,11 @@ struct ActionButtonsView: View {
 struct StatusFooterView: View {
     let lastUpdated: String?
     let status: ConnectionStatus
+    @State private var memoryUsage: Double = 0
+    @State private var peakMemory: Double = 0
+    @State private var memoryHistory: [Double] = []
+    private let memoryTimer = Timer.publish(every: 2, on: .main, in: .common).autoconnect()
+    private let maxHistoryPoints = 60  // 2 minutes of history at 2-second intervals
 
     var statusText: String {
         switch status {
@@ -484,27 +499,255 @@ struct StatusFooterView: View {
     }
 
     var body: some View {
-        HStack {
-            Circle()
-                .fill(statusColor)
-                .frame(width: 8, height: 8)
+        VStack(alignment: .leading, spacing: 8) {
+            // Connection status row
+            HStack {
+                Circle()
+                    .fill(statusColor)
+                    .frame(width: 8, height: 8)
 
-            Text(statusText)
-                .font(.caption)
-                .foregroundColor(.secondary)
-
-            if let updated = lastUpdated {
-                Text("•")
-                    .foregroundColor(.secondary)
-                Text("Updated \(updated)")
+                Text(statusText)
                     .font(.caption)
                     .foregroundColor(.secondary)
+
+                if let updated = lastUpdated {
+                    Text("•")
+                        .foregroundColor(.secondary)
+                    Text("Updated \(updated)")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+
+                Spacer()
             }
 
-            Spacer()
+            // Memory graph
+            MemoryGraphView(
+                history: memoryHistory,
+                currentMemory: memoryUsage,
+                peakMemory: peakMemory
+            )
         }
         .padding(.top, 8)
+        .onAppear { updateMemory() }
+        .onReceive(memoryTimer) { _ in updateMemory() }
     }
+
+    private func updateMemory() {
+        let current = getMemoryUsageMB()
+        memoryUsage = current
+        if current > peakMemory {
+            peakMemory = current
+        }
+        memoryHistory.append(current)
+        if memoryHistory.count > maxHistoryPoints {
+            memoryHistory.removeFirst()
+        }
+    }
+}
+
+// MARK: - Memory Graph View
+
+struct MemoryGraphView: View {
+    let history: [Double]
+    let currentMemory: Double
+    let peakMemory: Double
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            // Header with current and peak
+            HStack {
+                Image(systemName: "memorychip")
+                    .font(.caption)
+                    .foregroundColor(.cyan)
+
+                Text("Memory")
+                    .font(.caption)
+                    .fontWeight(.medium)
+
+                Spacer()
+
+                Text(String(format: "%.1f MB", currentMemory))
+                    .font(.caption)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [.cyan, .blue],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+
+                Text("•")
+                    .foregroundColor(.secondary)
+                    .font(.caption2)
+
+                Text(String(format: "Peak: %.1f MB", peakMemory))
+                    .font(.caption2)
+                    .foregroundColor(.orange)
+            }
+
+            // Graph
+            GeometryReader { geo in
+                ZStack(alignment: .bottomLeading) {
+                    // Background grid lines
+                    VStack(spacing: 0) {
+                        ForEach(0..<4) { _ in
+                            Divider()
+                                .background(Color.gray.opacity(0.2))
+                            Spacer()
+                        }
+                        Divider()
+                            .background(Color.gray.opacity(0.2))
+                    }
+
+                    // Graph line
+                    if history.count > 1 {
+                        MemoryLineGraph(
+                            data: history,
+                            size: geo.size
+                        )
+                    }
+
+                    // Current value indicator (right edge)
+                    if !history.isEmpty {
+                        Circle()
+                            .fill(Color.cyan)
+                            .frame(width: 6, height: 6)
+                            .shadow(color: .cyan.opacity(0.5), radius: 3)
+                            .position(
+                                x: geo.size.width - 3,
+                                y: yPosition(for: history.last ?? 0, in: geo.size.height)
+                            )
+                    }
+                }
+            }
+            .frame(height: 50)
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Color.black.opacity(0.1))
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+
+            // Time labels
+            HStack {
+                Text("2m ago")
+                    .font(.system(size: 9))
+                    .foregroundColor(.secondary)
+                Spacer()
+                Text("now")
+                    .font(.system(size: 9))
+                    .foregroundColor(.secondary)
+            }
+        }
+        .padding(10)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(.ultraThinMaterial)
+                .shadow(color: .black.opacity(0.05), radius: 4, x: 0, y: 2)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .strokeBorder(
+                    LinearGradient(
+                        colors: [.white.opacity(0.2), .white.opacity(0.05)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 1
+                )
+        )
+    }
+
+    private func yPosition(for value: Double, in height: CGFloat) -> CGFloat {
+        guard !history.isEmpty else { return height }
+        let minVal = (history.min() ?? 0) * 0.95
+        let maxVal = max((history.max() ?? 100) * 1.05, minVal + 10)
+        let normalized = (value - minVal) / (maxVal - minVal)
+        return height - (CGFloat(normalized) * height)
+    }
+}
+
+struct MemoryLineGraph: View {
+    let data: [Double]
+    let size: CGSize
+
+    var body: some View {
+        Path { path in
+            guard data.count > 1 else { return }
+
+            let minVal = (data.min() ?? 0) * 0.95
+            let maxVal = max((data.max() ?? 100) * 1.05, minVal + 10)
+            let range = maxVal - minVal
+
+            let stepX = size.width / CGFloat(data.count - 1)
+
+            for (index, value) in data.enumerated() {
+                let x = CGFloat(index) * stepX
+                let normalizedY = (value - minVal) / range
+                let y = size.height - (CGFloat(normalizedY) * size.height)
+
+                if index == 0 {
+                    path.move(to: CGPoint(x: x, y: y))
+                } else {
+                    path.addLine(to: CGPoint(x: x, y: y))
+                }
+            }
+        }
+        .stroke(
+            LinearGradient(
+                colors: [.cyan, .blue, .purple],
+                startPoint: .leading,
+                endPoint: .trailing
+            ),
+            style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round)
+        )
+
+        // Fill under the line
+        Path { path in
+            guard data.count > 1 else { return }
+
+            let minVal = (data.min() ?? 0) * 0.95
+            let maxVal = max((data.max() ?? 100) * 1.05, minVal + 10)
+            let range = maxVal - minVal
+
+            let stepX = size.width / CGFloat(data.count - 1)
+
+            path.move(to: CGPoint(x: 0, y: size.height))
+
+            for (index, value) in data.enumerated() {
+                let x = CGFloat(index) * stepX
+                let normalizedY = (value - minVal) / range
+                let y = size.height - (CGFloat(normalizedY) * size.height)
+                path.addLine(to: CGPoint(x: x, y: y))
+            }
+
+            path.addLine(to: CGPoint(x: size.width, y: size.height))
+            path.closeSubpath()
+        }
+        .fill(
+            LinearGradient(
+                colors: [.cyan.opacity(0.3), .blue.opacity(0.1), .clear],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+        )
+    }
+}
+
+// Get current memory usage in MB
+func getMemoryUsageMB() -> Double {
+    var info = mach_task_basic_info()
+    var count = mach_msg_type_number_t(MemoryLayout<mach_task_basic_info>.size) / 4
+    let result = withUnsafeMutablePointer(to: &info) {
+        $0.withMemoryRebound(to: integer_t.self, capacity: Int(count)) {
+            task_info(mach_task_self_, task_flavor_t(MACH_TASK_BASIC_INFO), $0, &count)
+        }
+    }
+    if result == KERN_SUCCESS {
+        return Double(info.resident_size) / 1024.0 / 1024.0
+    }
+    return 0
 }
 
 // MARK: - Helper Functions
