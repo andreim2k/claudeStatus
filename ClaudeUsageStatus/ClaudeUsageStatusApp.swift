@@ -2,7 +2,7 @@ import SwiftUI
 import AppKit
 
 @main
-struct ClaudeMenuBarApp: App {
+struct ClaudeUsageApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 
     var body: some Scene {
@@ -299,19 +299,15 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
             return "0m"
         }
 
-        let hours = Int(remaining) / 3600
-        let minutes = (Int(remaining) % 3600) / 60
+        let totalHours = remaining / 3600.0
+        let totalMinutes = remaining / 60.0
 
-        if hours >= 1 {
-            if minutes == 0 {
-                return "\(hours)h"
-            } else if minutes < 30 {
-                return ">\(hours)h"
-            } else {
-                return "<\(hours + 1)h"
-            }
+        // If >= 1 hour, show as decimal hours (e.g., 3.5h)
+        if totalHours >= 1 {
+            return String(format: "%.1fh", totalHours)
         } else {
-            return "\(minutes)m"
+            // Less than 1 hour, show minutes
+            return "\(Int(totalMinutes))m"
         }
     }
 
@@ -331,37 +327,21 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
             return "0m"
         }
 
-        let days = Int(remaining) / 86400
-        let hours = (Int(remaining) % 86400) / 3600
-        let minutes = (Int(remaining) % 3600) / 60
-        let seconds = Int(remaining) % 60
+        let totalDays = remaining / 86400.0
+        let totalHours = remaining / 3600.0
+        let totalMinutes = remaining / 60.0
 
-        if days >= 1 {
-            if hours == 0 {
-                return "\(days)d"
-            } else if hours < 12 {
-                return ">\(days)d"
-            } else {
-                return "<\(days + 1)d"
-            }
+        // If >= 1 day, show as decimal days (e.g., 2.5d)
+        if totalDays >= 1 {
+            return String(format: "%.1fd", totalDays)
         }
-
-        if hours >= 1 {
-            if minutes == 0 {
-                return "\(hours)h"
-            } else if minutes < 30 {
-                return ">\(hours)h"
-            } else {
-                return "<\(hours + 1)h"
-            }
+        // If >= 1 hour, show as decimal hours (e.g., 18.5h)
+        else if totalHours >= 1 {
+            return String(format: "%.1fh", totalHours)
         }
-
-        if seconds == 0 {
-            return "\(minutes)m"
-        } else if seconds < 30 {
-            return ">\(minutes)m"
-        } else {
-            return "<\(minutes + 1)m"
+        // Less than 1 hour, show minutes
+        else {
+            return "\(Int(totalMinutes))m"
         }
     }
 

@@ -189,25 +189,11 @@ struct HeaderView: View {
     var body: some View {
         VStack(spacing: 8) {
             HStack {
-                // Claude.ai colored icon
-                if let nsImage = loadClaudeColoredIcon() {
-                    Image(nsImage: nsImage)
-                        .resizable()
-                        .frame(width: 24, height: 24)
-                } else {
-                    // Fallback to sparkle
-                    Image(systemName: "sparkles")
-                        .font(.title2)
-                        .foregroundStyle(
-                            LinearGradient(
-                                colors: [.cyan, .purple],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                }
+                // App icon sparkle
+                ClaudeSparkleIcon()
+                    .frame(width: 24, height: 24)
 
-                Text("Claude Status")
+                Text("Claude Usage Status")
                     .font(.headline)
                     .fontWeight(.semibold)
 
@@ -748,6 +734,57 @@ func getMemoryUsageMB() -> Double {
         return Double(info.resident_size) / 1024.0 / 1024.0
     }
     return 0
+}
+
+// MARK: - Claude Sparkle Icon (App Icon Style)
+
+struct ClaudeSparkleIcon: View {
+    var body: some View {
+        ZStack {
+            // Outer white/light rounded square (system gray background)
+            RoundedRectangle(cornerRadius: 5)
+                .fill(Color(white: 0.92))  // Light gray like macOS app icons
+
+            // Inner coral/orange rounded square with padding
+            RoundedRectangle(cornerRadius: 4)
+                .fill(
+                    LinearGradient(
+                        gradient: Gradient(colors: [
+                            Color(red: 0.85, green: 0.47, blue: 0.34),  // D97757
+                            Color(red: 0.91, green: 0.58, blue: 0.41)   // E8956A
+                        ]),
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .padding(3)
+
+            // White sparkle (4-pointed star)
+            Canvas { context, size in
+                let center = CGPoint(x: size.width / 2, y: size.height / 2)
+                let outerRadius = min(size.width, size.height) * 0.32
+                let innerRadius = min(size.width, size.height) * 0.12
+
+                var path = Path()
+
+                for i in 0..<8 {
+                    let angle = CGFloat(i) * .pi / 4 - .pi / 2
+                    let radius = i % 2 == 0 ? outerRadius : innerRadius
+                    let x = center.x + radius * cos(angle)
+                    let y = center.y + radius * sin(angle)
+
+                    if i == 0 {
+                        path.move(to: CGPoint(x: x, y: y))
+                    } else {
+                        path.addLine(to: CGPoint(x: x, y: y))
+                    }
+                }
+                path.closeSubpath()
+
+                context.fill(path, with: .color(.white.opacity(0.95)))
+            }
+        }
+    }
 }
 
 // MARK: - Helper Functions
