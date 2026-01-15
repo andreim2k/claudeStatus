@@ -142,9 +142,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         let usageString: String
         if subscriptionType.hasSeparateModelLimits && activeModel == .sonnet {
             let sonnetPct = isConnected ? "\(usageData.weekSonnet.used)" : "--"
-            usageString = "\(sessionPct)% · \(expiryTime) ⋮ \(weekAllPct)% ⋮ \(sonnetPct)% · \(weeklyExpiryTime)"
+            usageString = "\(sessionPct)% ~ \(expiryTime) | \(weekAllPct)% ~ \(weeklyExpiryTime) | \(sonnetPct)% ~ \(weeklyExpiryTime)"
         } else {
-            usageString = "\(sessionPct)% · \(expiryTime) ⋮ \(weekAllPct)% · \(weeklyExpiryTime)"
+            usageString = "\(sessionPct)% ~ \(expiryTime) | \(weekAllPct)% ~ \(weeklyExpiryTime)"
         }
 
         // Only recreate attributed string if values changed (avoid memory churn)
