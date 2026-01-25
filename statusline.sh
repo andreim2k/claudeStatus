@@ -27,7 +27,10 @@ BRIGHT_WHITE=$'\e[97m'
 
 # Core fields
 MODEL=$(echo "$input" | jq -r '.model.display_name // "Unknown"')
-CTX_PERCENT=$(echo "$input" | jq -r '.context_window.used_percentage // 0' | cut -d. -f1)
+RAW_CTX_PERCENT=$(echo "$input" | jq -r '.context_window.used_percentage // 0')
+# Adjust for autocompact buffer: 77.5% actual = 100% displayed
+# Formula: adjusted = raw / 0.775
+CTX_PERCENT=$(echo "$RAW_CTX_PERCENT" | awk '{printf "%.0f", $1 / 0.775}')
 CURRENT_DIR=$(echo "$input" | jq -r '.workspace.current_dir // ""' | sed "s|$HOME|~|")
 
 # Function to colorize percentage based on value
