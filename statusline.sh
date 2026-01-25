@@ -1,10 +1,96 @@
 #!/bin/bash
 input=$(cat)
 
+# Color codes
+RESET=$'\e[0m'
+BOLD=$'\e[1m'
+DIM=$'\e[2m'
+
+# Colors
+RED=$'\e[31m'
+GREEN=$'\e[32m'
+YELLOW=$'\e[33m'
+BLUE=$'\e[34m'
+MAGENTA=$'\e[35m'
+CYAN=$'\e[36m'
+WHITE=$'\e[37m'
+GRAY=$'\e[90m'
+
+# Bright colors
+BRIGHT_RED=$'\e[91m'
+BRIGHT_GREEN=$'\e[92m'
+BRIGHT_YELLOW=$'\e[93m'
+BRIGHT_BLUE=$'\e[94m'
+BRIGHT_MAGENTA=$'\e[95m'
+BRIGHT_CYAN=$'\e[96m'
+BRIGHT_WHITE=$'\e[97m'
+
 # Core fields
 MODEL=$(echo "$input" | jq -r '.model.display_name // "Unknown"')
 CTX_PERCENT=$(echo "$input" | jq -r '.context_window.used_percentage // 0' | cut -d. -f1)
 CURRENT_DIR=$(echo "$input" | jq -r '.workspace.current_dir // ""' | sed "s|$HOME|~|")
+
+# Function to colorize percentage based on value
+color_percentage() {
+    local pct=$1
+    if [ "$pct" -ge 80 ]; then
+        echo "${BRIGHT_RED}${BOLD}${pct}%${RESET}"
+    elif [ "$pct" -ge 60 ]; then
+        echo "${BRIGHT_YELLOW}${BOLD}${pct}%${RESET}"
+    elif [ "$pct" -ge 40 ]; then
+        echo "${BRIGHT_YELLOW}${pct}%${RESET}"
+    else
+        echo "${BRIGHT_GREEN}${BOLD}${pct}%${RESET}"
+    fi
+}
+
+# Function to colorize time based on urgency
+color_time() {
+    local time_str=$1
+    local window=$2  # "session" or "week"
+
+    if [ -z "$time_str" ]; then
+        echo ""
+        return
+    fi
+
+    if [[ "$time_str" == "soon" ]]; then
+        echo "${BRIGHT_RED}${BOLD}soon${RESET}"
+        return
+    fi
+
+    # Extract numeric values
+    if [[ "$time_str" =~ ([0-9]+)d ]]; then
+        local days="${BASH_REMATCH[1]}"
+        if [ "$window" = "week" ]; then
+            if [ "$days" -ge 5 ]; then
+                echo "${BRIGHT_GREEN}${time_str}${RESET}"
+            elif [ "$days" -ge 2 ]; then
+                echo "${BRIGHT_YELLOW}${time_str}${RESET}"
+            else
+                echo "${BRIGHT_YELLOW}${BOLD}${time_str}${RESET}"
+            fi
+        else
+            echo "${BRIGHT_GREEN}${time_str}${RESET}"
+        fi
+    elif [[ "$time_str" =~ ([0-9]+)h ]]; then
+        local hours="${BASH_REMATCH[1]}"
+        if [ "$window" = "session" ]; then
+            if [ "$hours" -ge 3 ]; then
+                echo "${BRIGHT_GREEN}${time_str}${RESET}"
+            elif [ "$hours" -ge 1 ]; then
+                echo "${BRIGHT_YELLOW}${time_str}${RESET}"
+            else
+                echo "${BRIGHT_YELLOW}${BOLD}${time_str}${RESET}"
+            fi
+        else
+            echo "${BRIGHT_YELLOW}${time_str}${RESET}"
+        fi
+    else
+        # Minutes only
+        echo "${BRIGHT_YELLOW}${BOLD}${time_str}${RESET}"
+    fi
+}
 
 # Parse human-readable reset time to epoch
 parse_reset_time() {
@@ -108,11 +194,20 @@ for CACHE in "/tmp/claude-usage-cache.json" "$HOME/.claude/usage-cache.json"; do
         WEEK_ALL_TIME=$(time_until "$WEEK_ALL_RESET")
         WEEK_SONNET_TIME=$(time_until "$WEEK_SONNET_RESET")
 
-        USAGE_PART="S:${SESSION_PCT:-0}% ${SESSION_TIME} | W:${WEEK_ALL_PCT:-0}% ${WEEK_ALL_TIME}"
+        # Colorize percentages and times
+        SESSION_PCT_COLOR=$(color_percentage "${SESSION_PCT:-0}")
+        WEEK_ALL_PCT_COLOR=$(color_percentage "${WEEK_ALL_PCT:-0}")
+        WEEK_SONNET_PCT_COLOR=$(color_percentage "${WEEK_SONNET_PCT:-0}")
+
+        SESSION_TIME_COLOR=$(color_time "$SESSION_TIME" "session")
+        WEEK_ALL_TIME_COLOR=$(color_time "$WEEK_ALL_TIME" "week")
+        WEEK_SONNET_TIME_COLOR=$(color_time "$WEEK_SONNET_TIME" "week")
+
+        USAGE_PART="${BRIGHT_WHITE}${BOLD}S:${RESET}${SESSION_PCT_COLOR} ${SESSION_TIME_COLOR} ${WHITE}|${RESET} ${BRIGHT_WHITE}${BOLD}W:${RESET}${WEEK_ALL_PCT_COLOR} ${WEEK_ALL_TIME_COLOR}"
 
         # Only show Sonnet if model contains "Sonnet"
         if echo "$MODEL" | grep -qi "sonnet"; then
-            USAGE_PART="${USAGE_PART} | So:${WEEK_SONNET_PCT:-0}% ${WEEK_SONNET_TIME}"
+            USAGE_PART="${USAGE_PART} ${WHITE}|${RESET} ${BRIGHT_WHITE}${BOLD}So:${RESET}${WEEK_SONNET_PCT_COLOR} ${WEEK_SONNET_TIME_COLOR}"
         fi
 
         break
@@ -127,16 +222,35 @@ if git rev-parse --git-dir > /dev/null 2>&1; then
     GIT_STATUS=""
 
     if ! git --no-optional-locks diff --quiet 2>/dev/null; then
-        GIT_STATUS="${GIT_STATUS}*"
+        GIT_STATUS="${GIT_STATUS}${BRIGHT_YELLOW}*${RESET}"
     fi
     if ! git --no-optional-locks diff --cached --quiet 2>/dev/null; then
-        GIT_STATUS="${GIT_STATUS}+"
+        GIT_STATUS="${GIT_STATUS}${BRIGHT_GREEN}+${RESET}"
     fi
     if [ -n "$(git --no-optional-locks ls-files --others --exclude-standard 2>/dev/null)" ]; then
-        GIT_STATUS="${GIT_STATUS}?"
+        GIT_STATUS="${GIT_STATUS}${BRIGHT_RED}?${RESET}"
     fi
 
-    GIT_PART=" | ${GIT_BRANCH}${GIT_STATUS}"
+    if [ -z "$GIT_STATUS" ]; then
+        # Clean repo
+        GIT_PART=" ${GRAY}|${RESET} ${BRIGHT_GREEN}${BOLD}${GIT_BRANCH}${RESET}"
+    else
+        GIT_PART=" ${GRAY}|${RESET} ${BRIGHT_CYAN}${BOLD}${GIT_BRANCH}${RESET}${GIT_STATUS}"
+    fi
 fi
 
-echo "[$MODEL] | $USAGE_PART | Ctx: ${CTX_PERCENT}% | $CURRENT_DIR$GIT_PART"
+# Colorize context percentage
+CTX_PCT_COLOR=$(color_percentage "${CTX_PERCENT}")
+
+# Colorize model name based on model type
+if [[ "$MODEL" == *"Opus"* ]]; then
+    MODEL_COLOR="${BRIGHT_MAGENTA}${BOLD}${MODEL}${RESET}"
+elif [[ "$MODEL" == *"Sonnet"* ]]; then
+    MODEL_COLOR="${BRIGHT_CYAN}${BOLD}${MODEL}${RESET}"
+elif [[ "$MODEL" == *"Haiku"* ]]; then
+    MODEL_COLOR="${BRIGHT_GREEN}${BOLD}${MODEL}${RESET}"
+else
+    MODEL_COLOR="${CYAN}${BOLD}${MODEL}${RESET}"
+fi
+
+echo "[${MODEL_COLOR}] ${WHITE}|${RESET} ${BRIGHT_WHITE}${BOLD}Ctx:${RESET} ${CTX_PCT_COLOR} ${WHITE}|${RESET} ${USAGE_PART}"
