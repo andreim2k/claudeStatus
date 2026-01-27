@@ -189,13 +189,10 @@ for CACHE in "/tmp/claude-usage-cache.json" "$HOME/.claude/usage-cache.json"; do
         WEEK_SONNET_PCT=$(jq -r '.seven_day_sonnet.utilization // 0' "$CACHE" 2>/dev/null | cut -d. -f1)
         WEEK_SONNET_RESET_STR=$(jq -r '.seven_day_sonnet.reset_time // ""' "$CACHE" 2>/dev/null)
 
-        SESSION_RESET=$(parse_reset_time "$SESSION_RESET_STR")
-        WEEK_ALL_RESET=$(parse_reset_time "$WEEK_ALL_RESET_STR")
-        WEEK_SONNET_RESET=$(parse_reset_time "$WEEK_SONNET_RESET_STR")
-
-        SESSION_TIME=$(time_until "$SESSION_RESET")
-        WEEK_ALL_TIME=$(time_until "$WEEK_ALL_RESET")
-        WEEK_SONNET_TIME=$(time_until "$WEEK_SONNET_RESET")
+        # Times are already formatted as "0h25m" or "1d22h"
+        SESSION_TIME="$SESSION_RESET_STR"
+        WEEK_ALL_TIME="$WEEK_ALL_RESET_STR"
+        WEEK_SONNET_TIME="$WEEK_SONNET_RESET_STR"
 
         # Colorize percentages and times
         SESSION_PCT_COLOR=$(color_percentage "${SESSION_PCT:-0}")
