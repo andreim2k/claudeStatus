@@ -33,17 +33,33 @@ RAW_CTX_PERCENT=$(echo "$input" | jq -r '.context_window.used_percentage // 0')
 CTX_PERCENT=$(echo "$RAW_CTX_PERCENT" | awk '{printf "%.0f", $1 / 0.775}')
 CURRENT_DIR=$(echo "$input" | jq -r '.workspace.current_dir // ""' | sed "s|$HOME|~|")
 
-# Function to colorize percentage based on value
+# Function to generate progress bar
+progress_bar() {
+    local pct=$1
+    local width=10
+    local filled=$((pct * width / 100))
+    local empty=$((width - filled))
+
+    local bar=""
+    for ((i=0; i<filled; i++)); do bar="${bar}█"; done
+    for ((i=0; i<empty; i++)); do bar="${bar}─"; done
+
+    echo "$bar"
+}
+
+# Function to colorize percentage based on value with progress bar
 color_percentage() {
     local pct=$1
+    local bar=$(progress_bar "$pct")
+
     if [ "$pct" -ge 80 ]; then
-        echo "${BRIGHT_RED}${BOLD}${pct}%${RESET}"
+        echo "${BRIGHT_RED}${BOLD}${pct}%${RESET} ${BRIGHT_RED}[${bar}]${RESET}"
     elif [ "$pct" -ge 60 ]; then
-        echo "${BRIGHT_YELLOW}${BOLD}${pct}%${RESET}"
+        echo "${BRIGHT_YELLOW}${BOLD}${pct}%${RESET} ${BRIGHT_YELLOW}[${bar}]${RESET}"
     elif [ "$pct" -ge 40 ]; then
-        echo "${BRIGHT_YELLOW}${pct}%${RESET}"
+        echo "${BRIGHT_YELLOW}${pct}%${RESET} ${BRIGHT_YELLOW}[${bar}]${RESET}"
     else
-        echo "${BRIGHT_GREEN}${BOLD}${pct}%${RESET}"
+        echo "${BRIGHT_GREEN}${BOLD}${pct}%${RESET} ${BRIGHT_GREEN}[${bar}]${RESET}"
     fi
 }
 
