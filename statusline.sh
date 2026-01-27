@@ -38,7 +38,7 @@ progress_bar() {
     local pct=$1
     # Cap at 100%
     [ "$pct" -gt 100 ] && pct=100
-    local width=10
+    local width=5
     local filled=$((pct * width / 100))
     local empty=$((width - filled))
 
