@@ -1,0 +1,31 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cat:*)",
+      "Bash(nx show:*)",
+      "Bash(ls:*)",
+      "Bash(grep:*)",
+      "Bash(npx nx test:*)",
+      "Bash(npx nx show:*)",
+      "Bash(git stash:*)",
+      "Bash(./gradlew compileTestJava:*)",
+      "Bash(./gradlew compileJava:*)",
+      "Bash(find:*)",
+      "Bash(pkill:*)",
+      "Bash(npx nx run-many:*)",
+      "Bash(git log:*)"
+    ],
+    "defaultMode": "default"
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "/bin/bash $HOME/.claude/statusline.sh"
+  },
+  "enabledPlugins": {
+    "swift-lsp@claude-plugins-official": true,
+    "clangd-lsp@claude-plugins-official": true,
+    "frontend-design@claude-plugins-official": true
+  },
+  "alwaysThinkingEnabled": true,
+  "model": "sonnet"
+}
