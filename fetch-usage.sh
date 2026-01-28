@@ -76,11 +76,16 @@ expect {
     "Loading" {
         set timeout 10
         expect {
-            "Sonnet only" { }
+            "Sonnet only" {
+                expect {
+                    "Esc to cancel" { }
+                    timeout { }
+                }
+            }
             timeout { }
         }
     }
-    "Sonnet only" { }
+    "Sonnet only" { sleep 2 }
     timeout { }
 }
 exec kill -9 [exp_pid]
@@ -100,17 +105,18 @@ if [ -f "$OUT" ]; then
     w=$(echo "$pcts" | sed -n 2p | grep -oE "^[0-9]+")
     so=$(echo "$pcts" | sed -n 3p | grep -oE "^[0-9]+")
 
-    # Get reset times - extract all "Resets X" patterns
-    # Session time (first occurrence, often corrupted like "Reses6:59pm")
-    s_raw=$(echo "$clean" | grep -oE "Rese[ts]*\s*[0-9]+:?[0-9]*(am|pm)" | head -1 | sed 's/Rese[ts]* *//')
+    # Get reset times - handles all formats:
+    # "Reses8pm", "Resets 5:30pm", "Resets Feb 1 at 8:59am", etc.
+    # Pattern: Rese(s/ts) followed by optional space, then time or "Mon DD at time"
+    all_resets=$(echo "$clean" | grep -oE "Rese[ts]*\s*([A-Z][a-z]+\s+[0-9]+\s+at\s+)?[0-9]+:?[0-9]*(am|pm)" | sed 's/Rese[ts]* *//')
+
+    # Session (1st), Week all (2nd), Sonnet (3rd)
+    s_raw=$(echo "$all_resets" | sed -n 1p)
+    w_raw=$(echo "$all_resets" | sed -n 2p)
+    so_raw=$(echo "$all_resets" | sed -n 3p)
+
     s_time=$(format_time "$s_raw")
-
-    # Week all models - "Resets Mon DD at X:XXpm"
-    w_raw=$(echo "$clean" | grep -oE "Resets [A-Z][a-z]+ [0-9]+ at [0-9]+:?[0-9]*(am|pm)" | head -1 | sed 's/Resets //')
     w_time=$(format_time "$w_raw")
-
-    # Sonnet only - second "Resets Mon DD at X:XXpm"
-    so_raw=$(echo "$clean" | grep -oE "Resets [A-Z][a-z]+ [0-9]+ at [0-9]+:?[0-9]*(am|pm)" | tail -1 | sed 's/Resets //')
     so_time=$(format_time "$so_raw")
 
     echo "" >> "$DEBUG"
