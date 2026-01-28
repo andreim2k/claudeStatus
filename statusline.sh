@@ -33,43 +33,32 @@ CURRENT_DIR=$(echo "$input" | jq -r '.workspace.current_dir // ""' | sed "s|$HOM
 
 # Function to generate progress bar
 # Each circle = 20%. Fills at 20%, 40%, 60%, 80%, 100%
-# Pass "blink" as $2 to make circles blink when >= 95%
 progress_bar() {
     local pct=$1
-    local blink_mode=$2
     [ "$pct" -gt 100 ] && pct=100
-
-    local blink_prefix=""
-    [ "$blink_mode" = "blink" ] && blink_prefix="${BLINK}"
 
     local bar=""
     for ((i=1; i<=5; i++)); do
         local threshold=$((i * 20))
         if [ "$pct" -ge "$threshold" ]; then
             # Filled circle (white)
-            bar="${bar}${blink_prefix}${WHITE}●${RESET}"
+            bar="${bar}${WHITE}●${RESET}"
         else
             # Empty circle (white)
-            bar="${bar}${blink_prefix}${WHITE}○${RESET}"
+            bar="${bar}${WHITE}○${RESET}"
         fi
     done
 
     echo "$bar"
 }
 
+
 # Function to colorize percentage based on value with progress bar
-# Blinks automatically when >= 95%
 color_percentage() {
     local pct=$1
-    local blink_arg=""
-
-    # Enable blink for any percentage >= 95%
-    if [ "$pct" -ge 95 ]; then
-        blink_arg="blink"
-    fi
-
-    local bar=$(progress_bar "$pct" "$blink_arg")
+    local bar=$(progress_bar "$pct")
     local pct_color=""
+    local alert=""
 
     if [ "$pct" -ge 80 ]; then
         pct_color="${BRIGHT_RED}${BOLD}${pct}%${RESET}"
@@ -81,7 +70,12 @@ color_percentage() {
         pct_color="${BRIGHT_GREEN}${BOLD}${pct}%${RESET}"
     fi
 
-    echo "${pct_color} ${bar}"
+    # Add blinking attention emoji if >= 95%
+    if [ "$pct" -ge 95 ]; then
+        alert=" ${BLINK}${BRIGHT_RED}⚠️${RESET}"
+    fi
+
+    echo "${pct_color} ${bar}${alert}"
 }
 
 # Function to colorize time based on urgency
