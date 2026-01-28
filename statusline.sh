@@ -26,10 +26,22 @@ BRIGHT_CYAN=$'\e[96m'
 BRIGHT_WHITE=$'\e[97m'
 
 # Core fields
-PLAN_FULL=$(echo "$input" | jq -r '.organization.plan // .subscription.plan // .account.subscription_level // .model.plan // "Standard"')
-PLAN_NAME=$(echo "$PLAN_FULL" | sed 's/Claude //' | sed 's/ Plan//')
-PLAN="${WHITE}${BOLD}${PLAN_NAME}${RESET}"
 MODEL=$(echo "$input" | jq -r '.model.display_name // "Unknown"')
+# Try to extract plan from various possible locations
+PLAN_FULL=$(echo "$input" | jq -r '
+  .subscription.tier //
+  .subscription.plan //
+  .organization.subscription_tier //
+  .organization.plan //
+  .account.subscription_level //
+  .account.tier //
+  .account.plan //
+  .model.subscription //
+  .model.tier //
+  .plan //
+  "Max"' 2>/dev/null)
+PLAN_NAME=$(echo "$PLAN_FULL" | sed 's/Claude //' | sed 's/ Plan//' | sed 's/^//')
+PLAN="${WHITE}${BOLD}${PLAN_NAME}${RESET}"
 RAW_CTX_PERCENT=$(echo "$input" | jq -r '.context_window.used_percentage // 0')
 # Adjust for autocompact buffer: 77.5% actual = 100% displayed
 # Formula: adjusted = raw / 0.775, capped at 100%
