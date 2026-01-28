@@ -126,6 +126,11 @@ if [ -f "$OUT" ]; then
     w_raw=$(echo "$clean" | perl -0777 -ne 'print "$1\n" if /Current week \(all(.*?)Current week \(Sonnet/s' | grep -oE "$reset_pattern" | head -1 | sed 's/Rese[ts]* *//')
     so_raw=$(echo "$clean" | perl -0777 -ne 'print "$1\n" if /Current week \(Sonnet(.*?)Esc to cancel/s' | grep -oE "$reset_pattern" | head -1 | sed 's/Rese[ts]* *//')
 
+    # Fix corrupted times: "1m" → "1am" (ANSI stripping drops the 'a')
+    [[ "$s_raw" =~ ^[0-9]+:?[0-9]*m$ ]] && s_raw=$(echo "$s_raw" | sed 's/m$/am/')
+    [[ "$w_raw" =~ ^[0-9]+:?[0-9]*m$ ]] && w_raw=$(echo "$w_raw" | sed 's/m$/am/')
+    [[ "$so_raw" =~ ^[0-9]+:?[0-9]*m$ ]] && so_raw=$(echo "$so_raw" | sed 's/m$/am/')
+
     s_time=$(format_time "$s_raw")
     w_time=$(format_time "$w_raw")
     so_time=$(format_time "$so_raw")
