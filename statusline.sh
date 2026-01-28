@@ -248,11 +248,11 @@ for CACHE in "/tmp/claude-usage-cache.json" "$HOME/.claude/usage-cache.json"; do
         WEEK_ALL_TIME_COLOR=$(color_time "$WEEK_ALL_TIME" "week")
         WEEK_SONNET_TIME_COLOR=$(color_time "$WEEK_SONNET_TIME" "week")
 
-        USAGE_PART="${BRIGHT_WHITE}${BOLD}S:${RESET}${SESSION_PCT_COLOR} ${SESSION_TIME_COLOR} ${WHITE}|${RESET}${BRIGHT_WHITE}${BOLD}W:${RESET}${WEEK_ALL_PCT_COLOR} ${WEEK_ALL_TIME_COLOR}"
+        USAGE_PART="${BRIGHT_WHITE}${BOLD}S:${RESET}${SESSION_PCT_COLOR} ${SESSION_TIME_COLOR} ${WHITE}|${RESET} ${BRIGHT_WHITE}${BOLD}W:${RESET}${WEEK_ALL_PCT_COLOR} ${WEEK_ALL_TIME_COLOR}"
 
         # Only show Sonnet if model contains "Sonnet"
         if echo "$MODEL" | grep -qi "sonnet"; then
-            USAGE_PART="${USAGE_PART} ${WHITE}|${RESET}${BRIGHT_WHITE}${BOLD}So:${RESET}${WEEK_SONNET_PCT_COLOR} ${WEEK_SONNET_TIME_COLOR}"
+            USAGE_PART="${USAGE_PART} ${WHITE}|${RESET} ${BRIGHT_WHITE}${BOLD}So:${RESET}${WEEK_SONNET_PCT_COLOR} ${WEEK_SONNET_TIME_COLOR}"
         fi
 
         break
@@ -278,9 +278,9 @@ if git rev-parse --git-dir > /dev/null 2>&1; then
 
     if [ -z "$GIT_STATUS" ]; then
         # Clean repo
-        GIT_PART=" ${GRAY}|${RESET}${BRIGHT_GREEN}${BOLD}${GIT_BRANCH}${RESET}"
+        GIT_PART=" ${GRAY}|${RESET} ${BRIGHT_GREEN}${BOLD}${GIT_BRANCH}${RESET}"
     else
-        GIT_PART=" ${GRAY}|${RESET}${BRIGHT_CYAN}${BOLD}${GIT_BRANCH}${RESET}${GIT_STATUS}"
+        GIT_PART=" ${GRAY}|${RESET} ${BRIGHT_CYAN}${BOLD}${GIT_BRANCH}${RESET}${GIT_STATUS}"
     fi
 fi
 
@@ -298,4 +298,4 @@ else
     MODEL_COLOR="${CYAN}${BOLD}${MODEL}${RESET}"
 fi
 
-echo "[${MODEL_COLOR}] ${WHITE}|${RESET}${BRIGHT_WHITE}${BOLD}Ctx:${RESET} ${CTX_PCT_COLOR} ${WHITE}|${RESET}${USAGE_PART}"
+echo "[${MODEL_COLOR}] ${WHITE}|${RESET} ${BRIGHT_WHITE}${BOLD}Ctx:${RESET} ${CTX_PCT_COLOR} ${WHITE}|${RESET} ${USAGE_PART}"
