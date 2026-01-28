@@ -6,16 +6,11 @@ OUT="/tmp/claude-usage-output.txt"
 DEBUG="/tmp/claude-parse-debug.txt"
 LOCK="/tmp/claude-fetch-usage.lock"
 
-# Prevent overlapping runs - auto-expire lock after 60 seconds
+# Simple lock - just check if process is still running
 if [ -f "$LOCK" ]; then
-    lock_time=$(stat -f %m "$LOCK" 2>/dev/null || echo 0)
-    now=$(date +%s)
-    lock_age=$((now - lock_time))
-    if [ "$lock_age" -lt 60 ] && [ "$lock_age" -ge 0 ]; then
-        pid=$(cat "$LOCK" 2>/dev/null)
-        if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
-            exit 0
-        fi
+    pid=$(cat "$LOCK" 2>/dev/null)
+    if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
+        exit 0
     fi
     rm -f "$LOCK"
 fi
