@@ -46,11 +46,11 @@ progress_bar() {
     for ((i=1; i<=5; i++)); do
         local threshold=$((i * 20))
         if [ "$pct" -ge "$threshold" ]; then
-            # Filled circle (gray)
-            bar="${bar}${blink_prefix}${GRAY}●${RESET}"
+            # Filled circle (white)
+            bar="${bar}${blink_prefix}${WHITE}●${RESET}"
         else
-            # Empty circle (gray)
-            bar="${bar}${blink_prefix}${GRAY}○${RESET}"
+            # Empty circle (white)
+            bar="${bar}${blink_prefix}${WHITE}○${RESET}"
         fi
     done
 
