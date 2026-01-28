@@ -46,8 +46,8 @@ progress_bar() {
     for ((i=1; i<=5; i++)); do
         local threshold=$((i * 20))
         if [ "$pct" -ge "$threshold" ]; then
-            # Filled square (white bold - matches model color)
-            bar="${bar}${blink_prefix}${WHITE}${BOLD}■${RESET}"
+            # Filled square (gray)
+            bar="${bar}${blink_prefix}${GRAY}■${RESET}"
         else
             # Empty square (gray)
             bar="${bar}${blink_prefix}${GRAY}□${RESET}"
