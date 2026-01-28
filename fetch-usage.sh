@@ -105,8 +105,8 @@ EXP
 
 # Parse output
 if [ -f "$OUT" ]; then
-    # Strip ANSI codes
-    clean=$(cat "$OUT" | sed $'s/\x1b\[[0-9;]*[a-zA-Z]//g' | sed $'s/\x1b\[[?0-9;]*[hl]//g')
+    # Strip ANSI codes, control chars, and carriage returns
+    clean=$(cat "$OUT" | sed $'s/\x1b\[[0-9;]*[a-zA-Z]//g' | sed $'s/\x1b\[[?0-9;]*[hl]//g' | sed $'s/\x1b][^\x07]*\x07//g' | tr -d '\r' | tr -d '\007')
 
     echo "=== CLEANED ===" > "$DEBUG"
     echo "$clean" >> "$DEBUG"
@@ -117,15 +117,14 @@ if [ -f "$OUT" ]; then
     w=$(echo "$pcts" | sed -n 2p | grep -oE "^[0-9]+")
     so=$(echo "$pcts" | sed -n 3p | grep -oE "^[0-9]+")
 
-    # Get reset times - handles all formats:
-    # "Reses8pm", "Resets 5:30pm", "Resets Feb 1 at 8:59am", etc.
-    # Pattern: Rese(s/ts) followed by optional space, then time or "Mon DD at time"
-    all_resets=$(echo "$clean" | grep -oE "Rese[ts]*\s*([A-Z][a-z]+\s+[0-9]+\s+at\s+)?[0-9]+:?[0-9]*(am|pm)" | sed 's/Rese[ts]* *//')
+    # Get reset times by section using perl for non-greedy matching
+    # Handles: "Reses8pm", "Resets 5:30pm", "Resets 12:59am", "Resets Feb 1 at 8:59am"
+    reset_pattern='Rese[ts]*\s*([A-Z][a-z]+\s+[0-9]+\s+at\s+)?[0-9]+:?[0-9]*(am|pm|m)'
 
-    # Session (1st), Week all (2nd), Sonnet (3rd)
-    s_raw=$(echo "$all_resets" | sed -n 1p)
-    w_raw=$(echo "$all_resets" | sed -n 2p)
-    so_raw=$(echo "$all_resets" | sed -n 3p)
+    # Extract section blocks using perl (supports non-greedy)
+    s_raw=$(echo "$clean" | perl -0777 -ne 'print "$1\n" if /Current session(.*?)Current week/s' | grep -oE "$reset_pattern" | head -1 | sed 's/Rese[ts]* *//')
+    w_raw=$(echo "$clean" | perl -0777 -ne 'print "$1\n" if /Current week \(all(.*?)Current week \(Sonnet/s' | grep -oE "$reset_pattern" | head -1 | sed 's/Rese[ts]* *//')
+    so_raw=$(echo "$clean" | perl -0777 -ne 'print "$1\n" if /Current week \(Sonnet(.*?)Esc to cancel/s' | grep -oE "$reset_pattern" | head -1 | sed 's/Rese[ts]* *//')
 
     s_time=$(format_time "$s_raw")
     w_time=$(format_time "$w_raw")
