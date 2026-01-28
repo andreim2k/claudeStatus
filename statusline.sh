@@ -269,7 +269,7 @@ fi
 # Colorize context percentage
 CTX_PCT_COLOR=$(color_percentage "${CTX_PERCENT}")
 
-# Colorize model name (always white)
-MODEL_COLOR="${WHITE}${MODEL}${RESET}"
+# Colorize model name (always white, bold)
+MODEL_COLOR="${WHITE}${BOLD}${MODEL}${RESET}"
 
 echo "${WHITE}[${RESET}${MODEL_COLOR}${WHITE}]${RESET} ${WHITE}|${RESET} ${BRIGHT_WHITE}${BOLD}Ctx:${RESET} ${CTX_PCT_COLOR} ${WHITE}|${RESET} ${USAGE_PART}"
