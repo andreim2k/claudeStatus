@@ -26,7 +26,7 @@ BRIGHT_CYAN=$'\e[96m'
 BRIGHT_WHITE=$'\e[97m'
 
 # Core fields
-PLAN_NAME=$(echo "$input" | jq -r '.organization.plan // .subscription.plan // .account.subscription_level // "Claude"')
+PLAN_NAME=$(echo "$input" | jq -r '.organization.plan // .subscription.plan // .account.subscription_level // "Standard"')
 PLAN="${WHITE}${BOLD}${PLAN_NAME}${RESET}"
 MODEL=$(echo "$input" | jq -r '.model.display_name // "Unknown"')
 RAW_CTX_PERCENT=$(echo "$input" | jq -r '.context_window.used_percentage // 0')
@@ -274,4 +274,4 @@ CTX_PCT_COLOR=$(color_percentage "${CTX_PERCENT}")
 # Colorize model name (always white, bold)
 MODEL_COLOR="${WHITE}${BOLD}${MODEL}${RESET}"
 
-echo "${WHITE}[${RESET}${PLAN}${WHITE} ${RESET}${MODEL_COLOR}${WHITE}]${RESET} ${WHITE}|${RESET} ${BRIGHT_WHITE}${BOLD}Ctx:${RESET} ${CTX_PCT_COLOR} ${WHITE}|${RESET} ${USAGE_PART}"
+echo "${WHITE}[${RESET}${PLAN}${WHITE} Plan]${RESET} ${WHITE}[${RESET}${MODEL_COLOR}${WHITE}]${RESET} ${WHITE}|${RESET} ${BRIGHT_WHITE}${BOLD}Ctx:${RESET} ${CTX_PCT_COLOR} ${WHITE}|${RESET} ${USAGE_PART}"
