@@ -5,6 +5,7 @@ input=$(cat)
 RESET=$'\e[0m'
 BOLD=$'\e[1m'
 DIM=$'\e[2m'
+BLINK=$'\e[5m'
 
 # Colors
 RED=$'\e[31m'
@@ -266,7 +267,13 @@ fi
 # Colorize context percentage
 CTX_PCT_COLOR=$(color_percentage "${CTX_PERCENT}")
 
+# Context alert when near full
+CTX_ALERT=""
+if [ "${CTX_PERCENT}" -ge 95 ]; then
+    CTX_ALERT=" ${BLINK}${BRIGHT_RED}${BOLD}/compact${RESET}"
+fi
+
 # Colorize model name (always white, bold)
 MODEL_COLOR="${WHITE}${BOLD}${MODEL}${RESET}"
 
-echo "${WHITE}[${RESET}${MODEL_COLOR}${WHITE}]${RESET} ${WHITE}|${RESET} ${BRIGHT_WHITE}${BOLD}Ctx:${RESET} ${CTX_PCT_COLOR} ${WHITE}|${RESET} ${USAGE_PART}"
+echo "${WHITE}[${RESET}${MODEL_COLOR}${WHITE}]${RESET} ${WHITE}|${RESET} ${BRIGHT_WHITE}${BOLD}Ctx:${RESET} ${CTX_PCT_COLOR}${CTX_ALERT} ${WHITE}|${RESET} ${USAGE_PART}"
