@@ -33,18 +33,41 @@ RAW_CTX_PERCENT=$(echo "$input" | jq -r '.context_window.used_percentage // 0')
 CTX_PERCENT=$(echo "$RAW_CTX_PERCENT" | awk '{val = $1 / 0.775; printf "%.0f", (val > 100 ? 100 : val)}')
 CURRENT_DIR=$(echo "$input" | jq -r '.workspace.current_dir // ""' | sed "s|$HOME|~|")
 
-# Function to generate professional progress bar
+# Function to generate professional progress bar with color intensity
+# Each bullet = 20%. Within each bullet: gray (0-5%) → yellow (5-10%) → green (10-15%) → red (15-20%)
 progress_bar() {
     local pct=$1
-    # Cap at 100%
     [ "$pct" -gt 100 ] && pct=100
-    local width=5
-    local filled=$((pct * width / 100))
-    local empty=$((width - filled))
 
     local bar=""
-    for ((i=0; i<filled; i++)); do bar="${bar}●"; done
-    for ((i=0; i<empty; i++)); do bar="${bar}○"; done
+    for ((i=0; i<5; i++)); do
+        local bullet_start=$((i * 20))
+        local bullet_end=$(((i + 1) * 20))
+
+        if [ "$pct" -lt "$bullet_start" ]; then
+            # Empty bullet (gray)
+            bar="${bar}${GRAY}○${RESET}"
+        elif [ "$pct" -ge "$bullet_end" ]; then
+            # Fully filled bullet (red - max intensity)
+            bar="${bar}${BRIGHT_RED}●${RESET}"
+        else
+            # Partial bullet - determine color by intensity within this 20% range
+            local fraction=$((pct - bullet_start))
+            if [ "$fraction" -lt 5 ]; then
+                # 0-5%: gray
+                bar="${bar}${GRAY}●${RESET}"
+            elif [ "$fraction" -lt 10 ]; then
+                # 5-10%: yellow
+                bar="${bar}${BRIGHT_YELLOW}●${RESET}"
+            elif [ "$fraction" -lt 15 ]; then
+                # 10-15%: green
+                bar="${bar}${BRIGHT_GREEN}●${RESET}"
+            else
+                # 15-20%: red
+                bar="${bar}${BRIGHT_RED}●${RESET}"
+            fi
+        fi
+    done
 
     echo "$bar"
 }
@@ -55,23 +78,18 @@ color_percentage() {
     local bar=$(progress_bar "$pct")
 
     local pct_color=""
-    local bar_color=""
 
     if [ "$pct" -ge 80 ]; then
         pct_color="${BRIGHT_RED}${BOLD}${pct}%${RESET}"
-        bar_color="${BRIGHT_RED}${bar}${RESET}"
     elif [ "$pct" -ge 60 ]; then
         pct_color="${BRIGHT_YELLOW}${BOLD}${pct}%${RESET}"
-        bar_color="${BRIGHT_YELLOW}${bar}${RESET}"
     elif [ "$pct" -ge 40 ]; then
         pct_color="${BRIGHT_YELLOW}${pct}%${RESET}"
-        bar_color="${BRIGHT_YELLOW}${bar}${RESET}"
     else
         pct_color="${BRIGHT_GREEN}${BOLD}${pct}%${RESET}"
-        bar_color="${BRIGHT_GREEN}${bar}${RESET}"
     fi
 
-    echo "${pct_color} ${GRAY}${bar_color}"
+    echo "${pct_color} ${bar}"
 }
 
 # Function to colorize time based on urgency
