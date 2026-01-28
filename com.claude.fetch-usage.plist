@@ -4,6 +4,15 @@
 <dict>
     <key>Label</key>
     <string>com.claude.fetch-usage</string>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/Users/andrei/.local/bin</string>
+        <key>HOME</key>
+        <string>/Users/andrei</string>
+        <key>TERM</key>
+        <string>xterm-256color</string>
+    </dict>
     <key>ProgramArguments</key>
     <array>
         <string>/bin/bash</string>
