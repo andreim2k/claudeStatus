@@ -65,17 +65,24 @@ format_time() {
 # Run claude with /usage command via expect
 expect << 'EXP' > "$OUT" 2>&1
 log_user 1
-set timeout 10
+set timeout 20
 spawn /Users/andrei/.local/bin/claude --dangerously-skip-permissions
 expect "Try"
 sleep 0.5
+# Send /usage, wait for autocomplete, then Enter
 send "/usage"
-sleep 0.5
+sleep 0.3
 send "\r"
+# Wait for actual usage modal - it shows "% used" for each limit
 expect {
-    "Sonnet only" { }
+    -re {\d+% used.*\d+% used.*\d+% used} { }
+    "% used" { sleep 2 }
     timeout { }
 }
+sleep 0.5
+# Press Escape to close modal, then Ctrl-C to exit
+send "\033"
+sleep 0.2
 send "\003"
 expect eof
 EXP
