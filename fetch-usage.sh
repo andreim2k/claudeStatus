@@ -4,6 +4,17 @@
 CACHE="/tmp/claude-usage-cache.json"
 OUT="/tmp/claude-usage-output.txt"
 DEBUG="/tmp/claude-parse-debug.txt"
+LOCK="/tmp/claude-fetch-usage.lock"
+
+# Prevent overlapping runs
+if [ -f "$LOCK" ]; then
+    pid=$(cat "$LOCK")
+    if kill -0 "$pid" 2>/dev/null; then
+        exit 0
+    fi
+fi
+echo $$ > "$LOCK"
+trap "rm -f $LOCK" EXIT
 
 cd "$HOME"
 
