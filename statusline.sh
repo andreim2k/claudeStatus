@@ -33,39 +33,21 @@ RAW_CTX_PERCENT=$(echo "$input" | jq -r '.context_window.used_percentage // 0')
 CTX_PERCENT=$(echo "$RAW_CTX_PERCENT" | awk '{val = $1 / 0.775; printf "%.0f", (val > 100 ? 100 : val)}')
 CURRENT_DIR=$(echo "$input" | jq -r '.workspace.current_dir // ""' | sed "s|$HOME|~|")
 
-# Function to generate professional progress bar with color intensity
-# Each bullet = 20%. Within each bullet: gray (0-5%) → yellow (5-10%) → green (10-15%) → red (15-20%)
+# Function to generate progress bar
+# Each bullet = 20%. Fills at 20%, 40%, 60%, 80%, 100%
 progress_bar() {
     local pct=$1
     [ "$pct" -gt 100 ] && pct=100
 
     local bar=""
-    for ((i=0; i<5; i++)); do
-        local bullet_start=$((i * 20))
-        local bullet_end=$(((i + 1) * 20))
-
-        if [ "$pct" -le "$bullet_start" ]; then
-            # Empty bullet (same color as separators)
-            bar="${bar}${WHITE}○${RESET}"
-        elif [ "$pct" -gt "$bullet_end" ]; then
-            # Fully filled bullet (red - max intensity)
-            bar="${bar}${BRIGHT_RED}●${RESET}"
+    for ((i=1; i<=5; i++)); do
+        local threshold=$((i * 20))
+        if [ "$pct" -ge "$threshold" ]; then
+            # Filled bullet (white)
+            bar="${bar}${BRIGHT_WHITE}●${RESET}"
         else
-            # Partial bullet - determine color by intensity within this 20% range
-            local fraction=$((pct - bullet_start))
-            if [ "$fraction" -lt 5 ]; then
-                # 0-5%: white
-                bar="${bar}${BRIGHT_WHITE}●${RESET}"
-            elif [ "$fraction" -lt 10 ]; then
-                # 5-10%: yellow
-                bar="${bar}${BRIGHT_YELLOW}●${RESET}"
-            elif [ "$fraction" -lt 15 ]; then
-                # 10-15%: green
-                bar="${bar}${BRIGHT_GREEN}●${RESET}"
-            else
-                # 15-20%: red
-                bar="${bar}${BRIGHT_RED}●${RESET}"
-            fi
+            # Empty bullet
+            bar="${bar}${WHITE}○${RESET}"
         fi
     done
 
