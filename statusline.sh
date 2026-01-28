@@ -270,7 +270,7 @@ CTX_PCT_COLOR=$(color_percentage "${CTX_PERCENT}")
 # Context alert when near full
 CTX_ALERT=""
 if [ "${CTX_PERCENT}" -ge 95 ]; then
-    CTX_ALERT=" ${BRIGHT_RED}${BOLD}${BLINK}⚠${RESET}"
+    CTX_ALERT=" ${BRIGHT_RED}${BOLD}${BLINK}⚠️${RESET}"
 fi
 
 # Colorize model name (always white, bold)
