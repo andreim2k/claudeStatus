@@ -248,11 +248,11 @@ for CACHE in "/tmp/claude-usage-cache.json" "$HOME/.claude/usage-cache.json"; do
         WEEK_ALL_TIME_COLOR=$(color_time "$WEEK_ALL_TIME" "week")
         WEEK_SONNET_TIME_COLOR=$(color_time "$WEEK_SONNET_TIME" "week")
 
-        USAGE_PART="${BRIGHT_WHITE}${BOLD}S:${RESET}${SESSION_PCT_COLOR} ${SESSION_TIME_COLOR} ${WHITE}|${RESET} ${BRIGHT_WHITE}${BOLD}W:${RESET}${WEEK_ALL_PCT_COLOR} ${WEEK_ALL_TIME_COLOR}"
+        USAGE_PART="${BRIGHT_WHITE}${BOLD}S:${RESET} ${SESSION_PCT_COLOR} ${SESSION_TIME_COLOR} ${WHITE}|${RESET} ${BRIGHT_WHITE}${BOLD}W:${RESET} ${WEEK_ALL_PCT_COLOR} ${WEEK_ALL_TIME_COLOR}"
 
         # Only show Sonnet if model contains "Sonnet"
         if echo "$MODEL" | grep -qi "sonnet"; then
-            USAGE_PART="${USAGE_PART} ${WHITE}|${RESET} ${BRIGHT_WHITE}${BOLD}So:${RESET}${WEEK_SONNET_PCT_COLOR} ${WEEK_SONNET_TIME_COLOR}"
+            USAGE_PART="${USAGE_PART} ${WHITE}|${RESET} ${BRIGHT_WHITE}${BOLD}So:${RESET} ${WEEK_SONNET_PCT_COLOR} ${WEEK_SONNET_TIME_COLOR}"
         fi
 
         break
