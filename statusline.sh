@@ -54,8 +54,8 @@ progress_bar() {
             # Partial bullet - determine color by intensity within this 20% range
             local fraction=$((pct - bullet_start))
             if [ "$fraction" -lt 5 ]; then
-                # 0-5%: gray
-                bar="${bar}${GRAY}●${RESET}"
+                # 0-5%: white
+                bar="${bar}${BRIGHT_WHITE}●${RESET}"
             elif [ "$fraction" -lt 10 ]; then
                 # 5-10%: yellow
                 bar="${bar}${BRIGHT_YELLOW}●${RESET}"
