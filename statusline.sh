@@ -272,4 +272,4 @@ CTX_PCT_COLOR=$(color_percentage "${CTX_PERCENT}")
 # Colorize model name (always gray)
 MODEL_COLOR="${GRAY}${BOLD}${MODEL}${RESET}"
 
-echo "[${MODEL_COLOR}] ${WHITE}|${RESET} ${BRIGHT_WHITE}${BOLD}Ctx:${RESET} ${CTX_PCT_COLOR} ${WHITE}|${RESET} ${USAGE_PART}"
+echo "${GRAY}[${RESET}${MODEL_COLOR}${GRAY}]${RESET} ${WHITE}|${RESET} ${BRIGHT_WHITE}${BOLD}Ctx:${RESET} ${CTX_PCT_COLOR} ${WHITE}|${RESET} ${USAGE_PART}"
