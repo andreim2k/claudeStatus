@@ -32,8 +32,8 @@ CTX_PERCENT=$(echo "$input" | jq -r '.context_window.used_percentage // 0' | awk
 CURRENT_DIR=$(echo "$input" | jq -r '.workspace.current_dir // ""' | sed "s|$HOME|~|")
 
 # Function to generate progress bar
-# Each bullet = 20%. Fills at 20%, 40%, 60%, 80%, 100%
-# Pass "blink" as $2 to make all circles blink
+# Each square = 20%. Fills at 20%, 40%, 60%, 80%, 100%
+# Pass "blink" as $2 to make squares blink when >= 95%
 progress_bar() {
     local pct=$1
     local blink_mode=$2
@@ -46,11 +46,11 @@ progress_bar() {
     for ((i=1; i<=5; i++)); do
         local threshold=$((i * 20))
         if [ "$pct" -ge "$threshold" ]; then
-            # Filled bullet (white)
-            bar="${bar}${blink_prefix}${BRIGHT_WHITE}●${RESET}"
+            # Filled square (white)
+            bar="${bar}${blink_prefix}${BRIGHT_WHITE}■${RESET}"
         else
-            # Empty bullet
-            bar="${bar}${blink_prefix}${WHITE}○${RESET}"
+            # Empty square
+            bar="${bar}${blink_prefix}${WHITE}□${RESET}"
         fi
     done
 
