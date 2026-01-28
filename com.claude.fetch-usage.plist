@@ -10,7 +10,7 @@
         <string>/Users/andrei/.claude/fetch-usage.sh</string>
     </array>
     <key>StartInterval</key>
-    <integer>300</integer>
+    <integer>60</integer>
     <key>StandardOutPath</key>
     <string>/tmp/claude-fetch-usage.log</string>
     <key>StandardErrorPath</key>
