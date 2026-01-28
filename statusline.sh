@@ -34,7 +34,7 @@ CTX_PERCENT=$(echo "$RAW_CTX_PERCENT" | awk '{val = $1 / 0.775; printf "%.0f", (
 CURRENT_DIR=$(echo "$input" | jq -r '.workspace.current_dir // ""' | sed "s|$HOME|~|")
 
 # Function to generate professional progress bar with color intensity
-# Each bullet = 20%. Within each bullet: gray (0-5%) → yellow (5-10%) → green (10-15%) → red (15-20%)
+# Each bullet = 20%. Within each bullet: white (0-5%) → yellow (5-10%) → green (10-15%) → red (15-20%)
 progress_bar() {
     local pct=$1
     [ "$pct" -gt 100 ] && pct=100
@@ -54,8 +54,8 @@ progress_bar() {
             # Partial bullet - determine color by intensity within this 20% range
             local fraction=$((pct - bullet_start))
             if [ "$fraction" -lt 5 ]; then
-                # 0-5%: gray
-                bar="${bar}${GRAY}●${RESET}"
+                # 0-5%: white
+                bar="${bar}${BRIGHT_WHITE}●${RESET}"
             elif [ "$fraction" -lt 10 ]; then
                 # 5-10%: yellow
                 bar="${bar}${BRIGHT_YELLOW}●${RESET}"
