@@ -58,14 +58,13 @@ progress_bar() {
 }
 
 # Function to colorize percentage based on value with progress bar
-# Pass "ctx" as $2 to enable blinking at 95%+
+# Blinks automatically when >= 95%
 color_percentage() {
     local pct=$1
-    local mode=$2
     local blink_arg=""
 
-    # Enable blink for context >= 95%
-    if [ "$mode" = "ctx" ] && [ "$pct" -ge 95 ]; then
+    # Enable blink for any percentage >= 95%
+    if [ "$pct" -ge 95 ]; then
         blink_arg="blink"
     fi
 
@@ -278,7 +277,7 @@ if git rev-parse --git-dir > /dev/null 2>&1; then
 fi
 
 # Colorize context percentage (blinks at 95%+)
-CTX_PCT_COLOR=$(color_percentage "${CTX_PERCENT}" "ctx")
+CTX_PCT_COLOR=$(color_percentage "${CTX_PERCENT}")
 
 
 # Colorize model name (always white, bold)
