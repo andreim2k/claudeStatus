@@ -269,15 +269,7 @@ fi
 # Colorize context percentage
 CTX_PCT_COLOR=$(color_percentage "${CTX_PERCENT}")
 
-# Colorize model name based on model type
-if [[ "$MODEL" == *"Opus"* ]]; then
-    MODEL_COLOR="${BRIGHT_MAGENTA}${BOLD}${MODEL}${RESET}"
-elif [[ "$MODEL" == *"Sonnet"* ]]; then
-    MODEL_COLOR="${BRIGHT_CYAN}${BOLD}${MODEL}${RESET}"
-elif [[ "$MODEL" == *"Haiku"* ]]; then
-    MODEL_COLOR="${BRIGHT_GREEN}${BOLD}${MODEL}${RESET}"
-else
-    MODEL_COLOR="${CYAN}${BOLD}${MODEL}${RESET}"
-fi
+# Colorize model name (always cyan)
+MODEL_COLOR="${BRIGHT_CYAN}${BOLD}${MODEL}${RESET}"
 
 echo "[${MODEL_COLOR}] ${WHITE}|${RESET} ${BRIGHT_WHITE}${BOLD}Ctx:${RESET} ${CTX_PCT_COLOR} ${WHITE}|${RESET} ${USAGE_PART}"
