@@ -28,7 +28,7 @@ BRIGHT_WHITE=$'\e[97m'
 
 # Core fields
 MODEL=$(echo "$input" | jq -r '.model.display_name // "Unknown"')
-CTX_PERCENT=$(echo "$input" | jq -r '.context_window.used_percentage // 0' | awk '{printf "%.0f", $1}')
+CTX_PERCENT=$(echo "$input" | jq -r '.context_window.used_percentage // 0' | awk '{val = $1 / 0.84; if (val > 100) val = 100; printf "%.0f", val}')
 CURRENT_DIR=$(echo "$input" | jq -r '.workspace.current_dir // ""' | sed "s|$HOME|~|")
 
 # Function to generate progress bar
