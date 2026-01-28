@@ -26,7 +26,8 @@ BRIGHT_CYAN=$'\e[96m'
 BRIGHT_WHITE=$'\e[97m'
 
 # Core fields
-PLAN_NAME=$(echo "$input" | jq -r '.organization.plan // .subscription.plan // .account.subscription_level // "Standard"')
+PLAN_FULL=$(echo "$input" | jq -r '.organization.plan // .subscription.plan // .account.subscription_level // .model.plan // "Standard"')
+PLAN_NAME=$(echo "$PLAN_FULL" | sed 's/Claude //' | sed 's/ Plan//')
 PLAN="${WHITE}${BOLD}${PLAN_NAME}${RESET}"
 MODEL=$(echo "$input" | jq -r '.model.display_name // "Unknown"')
 RAW_CTX_PERCENT=$(echo "$input" | jq -r '.context_window.used_percentage // 0')
