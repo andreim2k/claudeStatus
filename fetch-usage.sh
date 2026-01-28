@@ -88,11 +88,11 @@ if [ -f "$OUT" ]; then
     echo "=== CLEANED ===" > "$DEBUG"
     echo "$clean" >> "$DEBUG"
 
-    # Get percentages from "X% used"
-    pcts=$(echo "$clean" | grep -o "[0-9]*% used")
-    s=$(echo "$pcts" | sed -n 1p | grep -o "^[0-9]*")
-    w=$(echo "$pcts" | sed -n 2p | grep -o "^[0-9]*")
-    so=$(echo "$pcts" | sed -n 3p | grep -o "^[0-9]*")
+    # Get percentages from "X% used" or "X%used" (space optional)
+    pcts=$(echo "$clean" | grep -oE "[0-9]+%\s*used")
+    s=$(echo "$pcts" | sed -n 1p | grep -oE "^[0-9]+")
+    w=$(echo "$pcts" | sed -n 2p | grep -oE "^[0-9]+")
+    so=$(echo "$pcts" | sed -n 3p | grep -oE "^[0-9]+")
 
     # Get reset times - extract all "Resets X" patterns
     # Session time (first occurrence, often corrupted like "Reses6:59pm")
