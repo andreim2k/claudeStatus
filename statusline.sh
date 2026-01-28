@@ -45,8 +45,8 @@ progress_bar() {
         local bullet_end=$(((i + 1) * 20))
 
         if [ "$pct" -lt "$bullet_start" ]; then
-            # Empty bullet (white)
-            bar="${bar}${BRIGHT_WHITE}○${RESET}"
+            # Empty bullet (gray)
+            bar="${bar}${GRAY}○${RESET}"
         elif [ "$pct" -ge "$bullet_end" ]; then
             # Fully filled bullet (red - max intensity)
             bar="${bar}${BRIGHT_RED}●${RESET}"
