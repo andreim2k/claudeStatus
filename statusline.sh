@@ -33,19 +33,24 @@ CURRENT_DIR=$(echo "$input" | jq -r '.workspace.current_dir // ""' | sed "s|$HOM
 
 # Function to generate progress bar
 # Each bullet = 20%. Fills at 20%, 40%, 60%, 80%, 100%
+# Pass "blink" as $2 to make all circles blink
 progress_bar() {
     local pct=$1
+    local blink_mode=$2
     [ "$pct" -gt 100 ] && pct=100
+
+    local blink_prefix=""
+    [ "$blink_mode" = "blink" ] && blink_prefix="${BLINK}"
 
     local bar=""
     for ((i=1; i<=5; i++)); do
         local threshold=$((i * 20))
         if [ "$pct" -ge "$threshold" ]; then
             # Filled bullet (white)
-            bar="${bar}${BRIGHT_WHITE}●${RESET}"
+            bar="${bar}${blink_prefix}${BRIGHT_WHITE}●${RESET}"
         else
             # Empty bullet
-            bar="${bar}${WHITE}○${RESET}"
+            bar="${bar}${blink_prefix}${WHITE}○${RESET}"
         fi
     done
 
@@ -53,10 +58,18 @@ progress_bar() {
 }
 
 # Function to colorize percentage based on value with progress bar
+# Pass "ctx" as $2 to enable blinking at 95%+
 color_percentage() {
     local pct=$1
-    local bar=$(progress_bar "$pct")
+    local mode=$2
+    local blink_arg=""
 
+    # Enable blink for context >= 95%
+    if [ "$mode" = "ctx" ] && [ "$pct" -ge 95 ]; then
+        blink_arg="blink"
+    fi
+
+    local bar=$(progress_bar "$pct" "$blink_arg")
     local pct_color=""
 
     if [ "$pct" -ge 80 ]; then
@@ -264,16 +277,11 @@ if git rev-parse --git-dir > /dev/null 2>&1; then
     fi
 fi
 
-# Colorize context percentage
-CTX_PCT_COLOR=$(color_percentage "${CTX_PERCENT}")
+# Colorize context percentage (blinks at 95%+)
+CTX_PCT_COLOR=$(color_percentage "${CTX_PERCENT}" "ctx")
 
-# Context alert when near full
-CTX_ALERT=""
-if [ "${CTX_PERCENT}" -ge 95 ]; then
-    CTX_ALERT=" ${BRIGHT_RED}${BOLD}${BLINK}⚠️${RESET}"
-fi
 
 # Colorize model name (always white, bold)
 MODEL_COLOR="${WHITE}${BOLD}${MODEL}${RESET}"
 
-echo "${WHITE}[${RESET}${MODEL_COLOR}${WHITE}]${RESET} ${WHITE}|${RESET} ${BRIGHT_WHITE}${BOLD}Ctx:${RESET} ${CTX_PCT_COLOR}${CTX_ALERT} ${WHITE}|${RESET} ${USAGE_PART}"
+echo "${WHITE}[${RESET}${MODEL_COLOR}${WHITE}]${RESET} ${WHITE}|${RESET} ${BRIGHT_WHITE}${BOLD}Ctx:${RESET} ${CTX_PCT_COLOR} ${WHITE}|${RESET} ${USAGE_PART}"
