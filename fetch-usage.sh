@@ -6,12 +6,16 @@ OUT="/tmp/claude-usage-output.txt"
 DEBUG="/tmp/claude-parse-debug.txt"
 LOCK="/tmp/claude-fetch-usage.lock"
 
-# Prevent overlapping runs
+# Prevent overlapping runs - auto-expire lock after 60 seconds
 if [ -f "$LOCK" ]; then
-    pid=$(cat "$LOCK")
-    if kill -0 "$pid" 2>/dev/null; then
-        exit 0
+    lock_age=$(($(date +%s) - $(stat -f %m "$LOCK")))
+    if [ "$lock_age" -lt 60 ]; then
+        pid=$(cat "$LOCK" 2>/dev/null)
+        if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
+            exit 0
+        fi
     fi
+    rm -f "$LOCK"
 fi
 echo $$ > "$LOCK"
 trap "rm -f $LOCK" EXIT
