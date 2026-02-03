@@ -128,8 +128,10 @@ if [ -f "$OUT" ]; then
     reset_pattern='Rese[ts]*\s*([A-Z][a-z]+\s+[0-9]+\s+at\s+)?[0-9]+:?[0-9]*(am|pm|m)'
 
     # Extract section blocks using perl (supports non-greedy)
+    # For Pro: "Current week (all" ends at "Esc to cancel"
+    # For Max: "Current week (all" ends at "Current week (Sonnet"
     s_raw=$(echo "$clean" | perl -0777 -ne 'print "$1\n" if /Current session(.*?)Current week/s' | grep -oE "$reset_pattern" | head -1 | sed 's/Rese[ts]* *//')
-    w_raw=$(echo "$clean" | perl -0777 -ne 'print "$1\n" if /Current week \(all(.*?)Current week \(Sonnet/s' | grep -oE "$reset_pattern" | head -1 | sed 's/Rese[ts]* *//')
+    w_raw=$(echo "$clean" | perl -0777 -ne 'print "$1\n" if /Current week \(all(.*?)(Current week \(Sonnet|Esc to cancel)/s' | grep -oE "$reset_pattern" | head -1 | sed 's/Rese[ts]* *//')
     so_raw=$(echo "$clean" | perl -0777 -ne 'print "$1\n" if /Current week \(Sonnet(.*?)Esc to cancel/s' | grep -oE "$reset_pattern" | head -1 | sed 's/Rese[ts]* *//')
 
     # Fix corrupted times: "1m" → "1am" (ANSI stripping drops the 'a')
