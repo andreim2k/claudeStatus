@@ -211,6 +211,8 @@ time_until() {
 USAGE_PART=""
 for CACHE in "/tmp/claude-usage-cache.json" "$HOME/.claude/usage-cache.json"; do
     if [ -f "$CACHE" ]; then
+        PLAN=$(jq -r '.plan // "Unknown"' "$CACHE" 2>/dev/null)
+
         SESSION_PCT=$(jq -r '.five_hour.utilization // 0' "$CACHE" 2>/dev/null | cut -d. -f1)
         SESSION_RESET_STR=$(jq -r '.five_hour.reset_time // ""' "$CACHE" 2>/dev/null)
 
@@ -236,8 +238,8 @@ for CACHE in "/tmp/claude-usage-cache.json" "$HOME/.claude/usage-cache.json"; do
 
         USAGE_PART="${BRIGHT_WHITE}${BOLD}Ses:${RESET} ${SESSION_PCT_COLOR} ${SESSION_TIME_COLOR} ${WHITE}|${RESET} ${BRIGHT_WHITE}${BOLD}Wek:${RESET} ${WEEK_ALL_PCT_COLOR} ${WEEK_ALL_TIME_COLOR}"
 
-        # Only show Sonnet if model contains "Sonnet"
-        if echo "$MODEL" | grep -qi "sonnet"; then
+        # Only show Sonnet if plan is "Max" AND model contains "Sonnet"
+        if [ "$PLAN" = "Max" ] && echo "$MODEL" | grep -qi "sonnet"; then
             USAGE_PART="${USAGE_PART} ${WHITE}|${RESET} ${BRIGHT_WHITE}${BOLD}Son:${RESET} ${WEEK_SONNET_PCT_COLOR} ${WEEK_SONNET_TIME_COLOR}"
         fi
 

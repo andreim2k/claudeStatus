@@ -79,6 +79,7 @@ expect << 'EXP' > "$OUT" 2>&1
 log_user 1
 set timeout 15
 spawn /Users/andrei/.local/bin/claude --dangerously-skip-permissions
+# Wait for startup banner and capture it (contains plan info like "Claude Pro" or "Claude Max")
 expect "Try"
 sleep 0.5
 send "/usage"
@@ -111,6 +112,11 @@ if [ -f "$OUT" ]; then
     echo "=== CLEANED ===" > "$DEBUG"
     echo "$clean" >> "$DEBUG"
 
+    # Extract plan from startup banner (e.g., "Claude Pro" or "Claude Max")
+    plan=$(echo "$clean" | grep -oE "Claude (Pro|Max)" | head -1 | awk '{print $2}')
+    [ -z "$plan" ] && plan="Unknown"
+    echo "Plan: $plan" >> "$DEBUG"
+
     # Get percentages from "X% used" or "X%used" (space optional)
     pcts=$(echo "$clean" | grep -oE "[0-9]+%\s*used")
     s=$(echo "$pcts" | sed -n 1p | grep -oE "^[0-9]+")
@@ -141,9 +147,9 @@ if [ -f "$OUT" ]; then
 
     if [ -n "$s" ] || [ -n "$w" ]; then
         cat > "$CACHE" << EOF
-{"five_hour":{"utilization":${s:-0}.0,"reset_time":"$s_time"},"seven_day":{"utilization":${w:-0}.0,"reset_time":"$w_time"},"seven_day_sonnet":{"utilization":${so:-0}.0,"reset_time":"$so_time"}}
+{"plan":"$plan","five_hour":{"utilization":${s:-0}.0,"reset_time":"$s_time"},"seven_day":{"utilization":${w:-0}.0,"reset_time":"$w_time"},"seven_day_sonnet":{"utilization":${so:-0}.0,"reset_time":"$so_time"}}
 EOF
-        echo "S:${s:-0}% ($s_time) | W:${w:-0}% ($w_time) | So:${so:-0}% ($so_time)"
+        echo "S:${s:-0}% ($s_time) | W:${w:-0}% ($w_time) | So:${so:-0}% ($so_time) | Plan:$plan"
         exit 0
     fi
 fi
