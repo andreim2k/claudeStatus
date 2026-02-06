@@ -4,6 +4,7 @@
 RESET=$'\e[0m'
 BOLD=$'\e[1m'
 BLINK=$'\e[5m'
+NOBLINK=$'\e[25m'
 
 # Bright colors
 BRIGHT_RED=$'\e[91m'
@@ -86,8 +87,6 @@ color_time() {
     fi
 }
 
-# Fetch fresh data to get latest model
-timeout 20 python3 /Users/andrei/.claude/fetch-usage.py > /dev/null 2>&1 &
 
 # Read from cache
 CACHE="/tmp/claude-usage-cache.json"
@@ -113,8 +112,9 @@ if [ -f "$CACHE" ]; then
     WEEK_ALL_TIME_COLOR=$(color_time "$WEEK_ALL_TIME" "week")
     WEEK_SONNET_TIME_COLOR=$(color_time "$WEEK_SONNET_TIME" "week")
 
-    # Output with plan and model at beginning
-    USAGE="${WHITE}[${RESET}${BRIGHT_WHITE}${BOLD}${PLAN}${RESET}${WHITE}]${RESET} ${WHITE}[${RESET}${BRIGHT_CYAN}${BOLD}${MODEL_DISPLAY}${RESET}${WHITE}]${RESET} ${WHITE}|${RESET} ${BRIGHT_WHITE}${BOLD}Ses:${RESET} ${SESSION_PCT_COLOR} ${SESSION_TIME_COLOR} ${WHITE}|${RESET} ${BRIGHT_WHITE}${BOLD}Wek:${RESET} ${WEEK_ALL_PCT_COLOR} ${WEEK_ALL_TIME_COLOR}"
+    # Output with blinking refresh indicator and plan/model
+    REFRESH="${BLINK}${BRIGHT_GREEN}⟳${NOBLINK}${RESET}"
+    USAGE="${REFRESH} ${WHITE}[${RESET}${BRIGHT_WHITE}${BOLD}${PLAN}${RESET}${WHITE}]${RESET} ${WHITE}[${RESET}${BRIGHT_CYAN}${BOLD}${MODEL_DISPLAY}${RESET}${WHITE}]${RESET} ${WHITE}|${RESET} ${BRIGHT_WHITE}${BOLD}Ses:${RESET} ${SESSION_PCT_COLOR} ${SESSION_TIME_COLOR} ${WHITE}|${RESET} ${BRIGHT_WHITE}${BOLD}Wek:${RESET} ${WEEK_ALL_PCT_COLOR} ${WEEK_ALL_TIME_COLOR}"
 
     # Show Sonnet usage only when:
     # 1. Sonnet model is active AND
