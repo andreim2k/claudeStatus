@@ -95,7 +95,18 @@ color_time() {
 
 # Read from cache
 CACHE="/tmp/claude-usage-cache.json"
+REFRESH_INDICATOR=""
+
 if [ -f "$CACHE" ]; then
+    # Check if cache was updated recently (within 5 seconds)
+    TIMESTAMP=$(jq -r '.timestamp // 0' "$CACHE" 2>/dev/null)
+    NOW=$(date +%s)
+    TIME_DIFF=$((NOW - TIMESTAMP))
+
+    if [ "$TIME_DIFF" -lt 5 ]; then
+        REFRESH_INDICATOR="${BLINK}${BRIGHT_GREEN}⟳${NOBLINK}${RESET} "
+    fi
+
     PLAN=$(jq -r '.plan // "Unknown"' "$CACHE" 2>/dev/null)
     MODEL_DISPLAY=$(jq -r '.model // "Unknown"' "$CACHE" 2>/dev/null)
 
@@ -117,8 +128,8 @@ if [ -f "$CACHE" ]; then
     WEEK_ALL_TIME_COLOR=$(color_time "$WEEK_ALL_TIME" "week")
     WEEK_SONNET_TIME_COLOR=$(color_time "$WEEK_SONNET_TIME" "week")
 
-    # Output with plan and model
-    USAGE="${WHITE}[${RESET}${BRIGHT_WHITE}${BOLD}${PLAN}${RESET}${WHITE}]${RESET} ${WHITE}[${RESET}${BRIGHT_CYAN}${BOLD}${MODEL_DISPLAY}${RESET}${WHITE}]${RESET} ${WHITE}|${RESET} ${BRIGHT_WHITE}${BOLD}Ses:${RESET} ${SESSION_PCT_COLOR} ${SESSION_TIME_COLOR} ${WHITE}|${RESET} ${BRIGHT_WHITE}${BOLD}Wek:${RESET} ${WEEK_ALL_PCT_COLOR} ${WEEK_ALL_TIME_COLOR}"
+    # Output with refresh indicator, plan and model
+    USAGE="${REFRESH_INDICATOR}${WHITE}[${RESET}${BRIGHT_WHITE}${BOLD}${PLAN}${RESET}${WHITE}]${RESET} ${WHITE}[${RESET}${BRIGHT_CYAN}${BOLD}${MODEL_DISPLAY}${RESET}${WHITE}]${RESET} ${WHITE}|${RESET} ${BRIGHT_WHITE}${BOLD}Ses:${RESET} ${SESSION_PCT_COLOR} ${SESSION_TIME_COLOR} ${WHITE}|${RESET} ${BRIGHT_WHITE}${BOLD}Wek:${RESET} ${WEEK_ALL_PCT_COLOR} ${WEEK_ALL_TIME_COLOR}"
 
     # Show Sonnet usage only when:
     # 1. Sonnet model is active AND

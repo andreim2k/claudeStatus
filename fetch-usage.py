@@ -220,8 +220,10 @@ def fetch_usage():
             w_time_formatted = format_time(w_time)
             so_time_formatted = format_time(so_time)
 
-            # Save to cache
+            # Save to cache with timestamp
+            import time as time_module
             data = {
+                "timestamp": int(time_module.time()),
                 "plan": plan,
                 "model": model,
                 "five_hour": {
