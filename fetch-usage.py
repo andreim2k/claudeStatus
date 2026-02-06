@@ -157,12 +157,20 @@ def fetch_usage():
 
         s, s_time, w, w_time, so, so_time = 0, "", 0, "", 0, ""
         plan = "Unknown"
+        model = "Unknown"
 
         # Detect plan type (Pro vs Max)
         if "Max" in clean:
             plan = "Max"
         elif "Pro" in clean:
             plan = "Pro"
+
+        # Extract model info (e.g., "Sonnet4.5", "Haiku4.5", "Opus4.6")
+        model_match = re.search(r'(Sonnet|Haiku|Opus)\s*(\d+\.?\d*)', clean, re.IGNORECASE)
+        if model_match:
+            model_name = model_match.group(1).capitalize()
+            model_version = model_match.group(2)
+            model = f"{model_name} {model_version}"
 
         with open('/tmp/claude-parse-debug.txt', 'a') as f:
             f.write(f"=== SECTIONS ({len(sections)}) ===\n")
@@ -215,6 +223,7 @@ def fetch_usage():
             # Save to cache
             data = {
                 "plan": plan,
+                "model": model,
                 "five_hour": {
                     "utilization": float(s),
                     "reset_time": s_time_formatted

@@ -86,33 +86,11 @@ color_time() {
     fi
 }
 
-# Read model from settings
-SETTINGS="$HOME/.claude/settings.json"
-MODEL="haiku"  # default
-if [ -f "$SETTINGS" ]; then
-    MODEL=$(jq -r '.model // "haiku"' "$SETTINGS" 2>/dev/null)
-fi
-
-# Map model to display name with version
-case "$MODEL" in
-    *opus*)
-        MODEL_DISPLAY="Opus 4.6"
-        ;;
-    *sonnet*)
-        MODEL_DISPLAY="Sonnet 4.5"
-        ;;
-    *haiku*)
-        MODEL_DISPLAY="Haiku 4.5"
-        ;;
-    *)
-        MODEL_DISPLAY=$(echo "$MODEL" | awk '{print toupper(substr($0,1,1)) tolower(substr($0,2))}')
-        ;;
-esac
-
 # Read from cache
 CACHE="/tmp/claude-usage-cache.json"
 if [ -f "$CACHE" ]; then
     PLAN=$(jq -r '.plan // "Unknown"' "$CACHE" 2>/dev/null)
+    MODEL_DISPLAY=$(jq -r '.model // "Unknown"' "$CACHE" 2>/dev/null)
 
     SESSION_PCT=$(jq -r '.five_hour.utilization // 0' "$CACHE" 2>/dev/null | cut -d. -f1)
     SESSION_TIME=$(jq -r '.five_hour.reset_time // ""' "$CACHE" 2>/dev/null)
@@ -138,7 +116,7 @@ if [ -f "$CACHE" ]; then
     # Show Sonnet usage only when:
     # 1. Sonnet model is active AND
     # 2. There's actual Sonnet data (Plan is Max)
-    if echo "$MODEL" | grep -qi "sonnet"; then
+    if echo "$MODEL_DISPLAY" | grep -qi "sonnet"; then
         if [ "$PLAN" = "Max" ] && [ -n "$WEEK_SONNET_TIME" ]; then
             USAGE="${USAGE} ${WHITE}|${RESET} ${BRIGHT_WHITE}${BOLD}Son:${RESET} ${WEEK_SONNET_PCT_COLOR} ${WEEK_SONNET_TIME_COLOR}"
         fi
