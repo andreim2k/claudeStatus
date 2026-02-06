@@ -66,8 +66,7 @@ def format_time(time_str):
             hour = 0
 
         try:
-            target = datetime.datetime.strptime(f"{month_str} {day} {hour}:{minute}", "%b %d %H:%M")
-            target = target.replace(year=now.year)
+            target = datetime.datetime.strptime(f"{month_str} {day} {now.year} {hour}:{minute}", "%b %d %Y %H:%M")
             if target <= now:
                 target = target.replace(year=now.year + 1)
 
