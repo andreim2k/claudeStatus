@@ -86,6 +86,16 @@ color_time() {
     fi
 }
 
+# Read model from settings
+SETTINGS="$HOME/.claude/settings.json"
+MODEL="haiku"  # default
+if [ -f "$SETTINGS" ]; then
+    MODEL=$(jq -r '.model // "haiku"' "$SETTINGS" 2>/dev/null)
+fi
+
+# Capitalize model name for display
+MODEL_DISPLAY=$(echo "$MODEL" | awk '{print toupper(substr($0,1,1)) tolower(substr($0,2))}')
+
 # Read from cache
 CACHE="/tmp/claude-usage-cache.json"
 if [ -f "$CACHE" ]; then
@@ -109,11 +119,11 @@ if [ -f "$CACHE" ]; then
     WEEK_ALL_TIME_COLOR=$(color_time "$WEEK_ALL_TIME" "week")
     WEEK_SONNET_TIME_COLOR=$(color_time "$WEEK_SONNET_TIME" "week")
 
-    # Output with plan at beginning
-    USAGE="${WHITE}[${RESET}${BRIGHT_WHITE}${BOLD}${PLAN}${RESET}${WHITE}]${RESET} ${WHITE}|${RESET} ${BRIGHT_WHITE}${BOLD}Ses:${RESET} ${SESSION_PCT_COLOR} ${SESSION_TIME_COLOR} ${WHITE}|${RESET} ${BRIGHT_WHITE}${BOLD}Wek:${RESET} ${WEEK_ALL_PCT_COLOR} ${WEEK_ALL_TIME_COLOR}"
+    # Output with plan and model at beginning
+    USAGE="${WHITE}[${RESET}${BRIGHT_WHITE}${BOLD}${PLAN}${RESET}${WHITE}]${RESET} ${WHITE}[${RESET}${BRIGHT_CYAN}${BOLD}${MODEL_DISPLAY}${RESET}${WHITE}]${RESET} ${WHITE}|${RESET} ${BRIGHT_WHITE}${BOLD}Ses:${RESET} ${SESSION_PCT_COLOR} ${SESSION_TIME_COLOR} ${WHITE}|${RESET} ${BRIGHT_WHITE}${BOLD}Wek:${RESET} ${WEEK_ALL_PCT_COLOR} ${WEEK_ALL_TIME_COLOR}"
 
-    # Always show Sonnet if Max plan
-    if [ "$PLAN" = "Max" ]; then
+    # Show Sonnet usage only when Sonnet model is active
+    if echo "$MODEL" | grep -qi "sonnet"; then
         USAGE="${USAGE} ${WHITE}|${RESET} ${BRIGHT_WHITE}${BOLD}Son:${RESET} ${WEEK_SONNET_PCT_COLOR} ${WEEK_SONNET_TIME_COLOR}"
     fi
 
