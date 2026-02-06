@@ -122,9 +122,13 @@ if [ -f "$CACHE" ]; then
     # Output with plan and model at beginning
     USAGE="${WHITE}[${RESET}${BRIGHT_WHITE}${BOLD}${PLAN}${RESET}${WHITE}]${RESET} ${WHITE}[${RESET}${BRIGHT_CYAN}${BOLD}${MODEL_DISPLAY}${RESET}${WHITE}]${RESET} ${WHITE}|${RESET} ${BRIGHT_WHITE}${BOLD}Ses:${RESET} ${SESSION_PCT_COLOR} ${SESSION_TIME_COLOR} ${WHITE}|${RESET} ${BRIGHT_WHITE}${BOLD}Wek:${RESET} ${WEEK_ALL_PCT_COLOR} ${WEEK_ALL_TIME_COLOR}"
 
-    # Show Sonnet usage only when Sonnet model is active
+    # Show Sonnet usage only when:
+    # 1. Sonnet model is active AND
+    # 2. There's actual Sonnet data (Plan is Max)
     if echo "$MODEL" | grep -qi "sonnet"; then
-        USAGE="${USAGE} ${WHITE}|${RESET} ${BRIGHT_WHITE}${BOLD}Son:${RESET} ${WEEK_SONNET_PCT_COLOR} ${WEEK_SONNET_TIME_COLOR}"
+        if [ "$PLAN" = "Max" ] && [ -n "$WEEK_SONNET_TIME" ]; then
+            USAGE="${USAGE} ${WHITE}|${RESET} ${BRIGHT_WHITE}${BOLD}Son:${RESET} ${WEEK_SONNET_PCT_COLOR} ${WEEK_SONNET_TIME_COLOR}"
+        fi
     fi
 
     echo "$USAGE"
