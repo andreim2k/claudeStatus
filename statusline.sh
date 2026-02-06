@@ -93,8 +93,21 @@ if [ -f "$SETTINGS" ]; then
     MODEL=$(jq -r '.model // "haiku"' "$SETTINGS" 2>/dev/null)
 fi
 
-# Capitalize model name for display
-MODEL_DISPLAY=$(echo "$MODEL" | awk '{print toupper(substr($0,1,1)) tolower(substr($0,2))}')
+# Map model to display name with version
+case "$MODEL" in
+    *opus*)
+        MODEL_DISPLAY="Opus 4.6"
+        ;;
+    *sonnet*)
+        MODEL_DISPLAY="Sonnet 4.5"
+        ;;
+    *haiku*)
+        MODEL_DISPLAY="Haiku 4.5"
+        ;;
+    *)
+        MODEL_DISPLAY=$(echo "$MODEL" | awk '{print toupper(substr($0,1,1)) tolower(substr($0,2))}')
+        ;;
+esac
 
 # Read from cache
 CACHE="/tmp/claude-usage-cache.json"
