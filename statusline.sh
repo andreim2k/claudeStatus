@@ -86,6 +86,9 @@ color_time() {
     fi
 }
 
+# Fetch fresh data to get latest model
+timeout 20 python3 /Users/andrei/.claude/fetch-usage.py > /dev/null 2>&1 &
+
 # Read from cache
 CACHE="/tmp/claude-usage-cache.json"
 if [ -f "$CACHE" ]; then
