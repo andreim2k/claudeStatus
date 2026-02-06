@@ -1,0 +1,7 @@
+{
+  "model": "haiku",
+  "statusLine": {
+    "type": "command",
+    "command": "bash /Users/andrei/.claude/statusline.sh"
+  }
+}
