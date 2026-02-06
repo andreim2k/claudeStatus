@@ -1,0 +1,11 @@
+{
+  "description": "Display Claude usage metrics in the status bar",
+  "hooks": {
+    "StatusBar": [
+      {
+        "type": "command",
+        "command": "python3 /Users/andrei/Development/claudeStatus/fetch-usage.py"
+      }
+    ]
+  }
+}

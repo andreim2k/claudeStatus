@@ -6,10 +6,87 @@ import json
 import re
 import sys
 import os
+import time
+import datetime
+from datetime import timedelta
 
 CACHE = "/tmp/claude-usage-cache.json"
 CLAUDE = "/Users/andrei/.local/bin/claude"
 DEBUG = "/tmp/claude-fetch-debug.txt"
+
+def format_time(time_str):
+    """Convert reset time like '6pm' or 'Feb 10 at 6pm' to time remaining like '5h59m'"""
+    if not time_str:
+        return ""
+
+    # Add spaces if concatenated (e.g., "Feb10at10am" -> "Feb 10 at 10am")
+    time_str = re.sub(r'([A-Za-z]+)(\d+)(at)(\d+)', r'\1 \2 \3 \4', time_str)
+
+    now = datetime.datetime.now()
+
+    # Handle "Xpm" or "X:XXpm" format (today or next occurrence)
+    match = re.match(r'^(\d{1,2}):?(\d{0,2})(am|pm)$', time_str)
+    if match:
+        hour = int(match.group(1))
+        minute = int(match.group(2) or '0')
+        ampm = match.group(3)
+
+        if ampm == 'pm' and hour != 12:
+            hour += 12
+        elif ampm == 'am' and hour == 12:
+            hour = 0
+
+        target = now.replace(hour=hour, minute=minute, second=0, microsecond=0)
+        if target <= now:
+            target += timedelta(days=1)
+
+        diff = target - now
+        hours = diff.seconds // 3600
+        minutes = (diff.seconds % 3600) // 60
+
+        if diff.days > 0:
+            return f"{diff.days}d{hours}h"
+        elif hours > 0:
+            return f"{hours}h{minutes}m"
+        else:
+            return f"{minutes}m"
+
+    # Handle "Mon DD at Xpm" format
+    match = re.match(r'^([A-Za-z]+)\s+(\d{1,2})\s+at\s+(\d{1,2}):?(\d{0,2})(am|pm)$', time_str)
+    if match:
+        month_str = match.group(1)
+        day = int(match.group(2))
+        hour = int(match.group(3))
+        minute = int(match.group(4) or '0')
+        ampm = match.group(5)
+
+        if ampm == 'pm' and hour != 12:
+            hour += 12
+        elif ampm == 'am' and hour == 12:
+            hour = 0
+
+        try:
+            target = datetime.datetime.strptime(f"{month_str} {day} {hour}:{minute}", "%b %d %H:%M")
+            target = target.replace(year=now.year)
+            if target <= now:
+                target = target.replace(year=now.year + 1)
+
+            diff = target - now
+            days = diff.days
+            hours = diff.seconds // 3600
+
+            if days > 0:
+                return f"{days}d{hours}h"
+            elif hours > 0:
+                minutes = (diff.seconds % 3600) // 60
+                return f"{hours}h{minutes}m"
+            else:
+                minutes = (diff.seconds % 3600) // 60
+                return f"{minutes}m"
+        except:
+            pass
+
+    return time_str
 
 def fetch_usage():
     all_output = ""
@@ -79,6 +156,13 @@ def fetch_usage():
         sections = re.split(r'(Curre[tn]*\s*(?:session|week))', clean)
 
         s, s_time, w, w_time, so, so_time = 0, "", 0, "", 0, ""
+        plan = "Unknown"
+
+        # Detect plan type (Pro vs Max)
+        if "Max" in clean:
+            plan = "Max"
+        elif "Pro" in clean:
+            plan = "Pro"
 
         with open('/tmp/claude-parse-debug.txt', 'a') as f:
             f.write(f"=== SECTIONS ({len(sections)}) ===\n")
@@ -102,9 +186,9 @@ def fetch_usage():
                 if time_match:
                     s_time = time_match.group(1).strip()
 
-            elif "all models" in content:
+            elif "all" in content and "models" in content:
                 pct_match = re.search(r'(\d+)%\s*used', content)
-                time_match = re.search(r'Resets\s*([^(]+?)\s*\(', content)
+                time_match = re.search(r'(?:Resets?|ts)\s*([^(\r\n]+?)\s*\(', content)
                 if pct_match:
                     w = int(pct_match.group(1))
                 if time_match:
@@ -123,19 +207,25 @@ def fetch_usage():
             f.write(f"s={s}, w={w}, so={so}\n")
 
         if s >= 0 and w >= 0:
+            # Format times as "Xh Ym" or "Xd Yh"
+            s_time_formatted = format_time(s_time)
+            w_time_formatted = format_time(w_time)
+            so_time_formatted = format_time(so_time)
+
             # Save to cache
             data = {
+                "plan": plan,
                 "five_hour": {
                     "utilization": float(s),
-                    "reset_time": s_time
+                    "reset_time": s_time_formatted
                 },
                 "seven_day": {
                     "utilization": float(w),
-                    "reset_time": w_time
+                    "reset_time": w_time_formatted
                 },
                 "seven_day_sonnet": {
                     "utilization": float(so),
-                    "reset_time": so_time
+                    "reset_time": so_time_formatted
                 }
             }
 
