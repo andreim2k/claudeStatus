@@ -30,11 +30,16 @@ progress_bar() {
     echo "$bar"
 }
 
-# Function to colorize percentage
+# Function to colorize percentage with warning at 95%+
 color_percentage() {
     local pct=$1
     local bar=$(progress_bar "$pct")
     local alert=""
+
+    # Add blinking warning if >= 95%
+    if [ "$pct" -ge 95 ]; then
+        alert=" ${BLINK}${BRIGHT_RED}⚠️${NOBLINK}${RESET}"
+    fi
 
     if [ "$pct" -ge 80 ]; then
         echo "${BRIGHT_RED}${BOLD}${pct}%${RESET} ${bar}${alert}"
@@ -112,9 +117,8 @@ if [ -f "$CACHE" ]; then
     WEEK_ALL_TIME_COLOR=$(color_time "$WEEK_ALL_TIME" "week")
     WEEK_SONNET_TIME_COLOR=$(color_time "$WEEK_SONNET_TIME" "week")
 
-    # Output with blinking refresh indicator and plan/model
-    REFRESH="${BLINK}${BRIGHT_GREEN}⟳${NOBLINK}${RESET}"
-    USAGE="${REFRESH} ${WHITE}[${RESET}${BRIGHT_WHITE}${BOLD}${PLAN}${RESET}${WHITE}]${RESET} ${WHITE}[${RESET}${BRIGHT_CYAN}${BOLD}${MODEL_DISPLAY}${RESET}${WHITE}]${RESET} ${WHITE}|${RESET} ${BRIGHT_WHITE}${BOLD}Ses:${RESET} ${SESSION_PCT_COLOR} ${SESSION_TIME_COLOR} ${WHITE}|${RESET} ${BRIGHT_WHITE}${BOLD}Wek:${RESET} ${WEEK_ALL_PCT_COLOR} ${WEEK_ALL_TIME_COLOR}"
+    # Output with plan and model
+    USAGE="${WHITE}[${RESET}${BRIGHT_WHITE}${BOLD}${PLAN}${RESET}${WHITE}]${RESET} ${WHITE}[${RESET}${BRIGHT_CYAN}${BOLD}${MODEL_DISPLAY}${RESET}${WHITE}]${RESET} ${WHITE}|${RESET} ${BRIGHT_WHITE}${BOLD}Ses:${RESET} ${SESSION_PCT_COLOR} ${SESSION_TIME_COLOR} ${WHITE}|${RESET} ${BRIGHT_WHITE}${BOLD}Wek:${RESET} ${WEEK_ALL_PCT_COLOR} ${WEEK_ALL_TIME_COLOR}"
 
     # Show Sonnet usage only when:
     # 1. Sonnet model is active AND
