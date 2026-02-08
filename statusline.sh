@@ -104,7 +104,7 @@ if [ -f "$CACHE" ]; then
     TIME_DIFF=$((NOW - TIMESTAMP))
 
     if [ "$TIME_DIFF" -lt 5 ]; then
-        REFRESH_INDICATOR="${BRIGHT_GREEN}●${RESET} "
+        REFRESH_INDICATOR="${BRIGHT_GREEN}🔄${RESET} "
     fi
 
     PLAN=$(jq -r '.plan // "Unknown"' "$CACHE" 2>/dev/null)
