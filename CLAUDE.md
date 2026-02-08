@@ -13,7 +13,7 @@ This project uses a custom status bar hook to display Claude usage information.
     "StatusBar": [
       {
         "type": "command",
-        "command": "bash /Users/andrei/Development/claudeStatus/statusline.sh"
+        "command": "bash /Users/andrei/.claude/statusline.sh"
       }
     ]
   }
