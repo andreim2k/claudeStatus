@@ -103,8 +103,18 @@ if [ -f "$CACHE" ]; then
     NOW=$(date +%s)
     TIME_DIFF=$((NOW - TIMESTAMP))
 
-    if [ "$TIME_DIFF" -lt 5 ]; then
-        REFRESH_INDICATOR="${BRIGHT_GREEN}🔄${RESET} "
+    NEXT_REFRESH=$((60 - TIME_DIFF))
+    if [ "$NEXT_REFRESH" -le 0 ]; then
+        NEXT_REFRESH=60
+    fi
+
+    # Color based on time until refresh
+    if [ "$NEXT_REFRESH" -le 10 ]; then
+        REFRESH_INDICATOR="${BRIGHT_RED}↻${RESET}${BRIGHT_RED}${NEXT_REFRESH}s${RESET} "
+    elif [ "$NEXT_REFRESH" -le 30 ]; then
+        REFRESH_INDICATOR="${BRIGHT_YELLOW}↻${RESET}${BRIGHT_YELLOW}${NEXT_REFRESH}s${RESET} "
+    else
+        REFRESH_INDICATOR="${BRIGHT_GREEN}↻${RESET}${BRIGHT_GREEN}${NEXT_REFRESH}s${RESET} "
     fi
 
     PLAN=$(jq -r '.plan // "Unknown"' "$CACHE" 2>/dev/null)
