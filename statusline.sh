@@ -36,9 +36,9 @@ color_percentage() {
     local bar=$(progress_bar "$pct")
     local alert=""
 
-    # Add blinking warning if >= 95%
+    # Add warning indicator if >= 95%
     if [ "$pct" -ge 95 ]; then
-        alert=" ${BLINK}${BRIGHT_RED}⚠️${NOBLINK}${RESET}"
+        alert=" ${BRIGHT_RED}⚠️${RESET}"
     fi
 
     if [ "$pct" -ge 80 ]; then
@@ -104,7 +104,10 @@ if [ -f "$CACHE" ]; then
     TIME_DIFF=$((NOW - TIMESTAMP))
 
     if [ "$TIME_DIFF" -lt 5 ]; then
-        REFRESH_INDICATOR="${BLINK}${BRIGHT_GREEN}⟳${NOBLINK}${RESET} "
+        # Use rotating animation instead of blinking
+        FRAMES=("⠋" "⠙" "⠹" "⠸" "⠼" "⠴" "⠦" "⠧" "⠇" "⠏")
+        FRAME_INDEX=$((TIME_DIFF % 10))
+        REFRESH_INDICATOR="${BRIGHT_GREEN}${FRAMES[$FRAME_INDEX]}${RESET} "
     fi
 
     PLAN=$(jq -r '.plan // "Unknown"' "$CACHE" 2>/dev/null)
