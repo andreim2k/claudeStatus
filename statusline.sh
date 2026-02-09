@@ -93,6 +93,13 @@ color_time() {
 }
 
 
+# Check if using local Claude with Ollama
+if [ "$LOCAL_CLAUDE" = "1" ]; then
+    LOCAL_MODEL="${LOCAL_MODEL:-Unknown}"
+    echo "${BRIGHT_GREEN}Local Model:${RESET} ${BRIGHT_WHITE}${LOCAL_MODEL}${RESET}"
+    exit 0
+fi
+
 # Read from cache
 CACHE="/tmp/claude-usage-cache.json"
 REFRESH_INDICATOR=""
