@@ -269,8 +269,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     }
 
     func startUpdateTimer() {
-        // Fetch data every 5 seconds
-        updateTimer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { [weak self] _ in
+        // Fetch data every 60 seconds
+        updateTimer = Timer.scheduledTimer(withTimeInterval: 60.0, repeats: true) { [weak self] _ in
             guard let self = self else { return }
             self.detectCurrentModel()
             self.fetchUsageDataAsync()

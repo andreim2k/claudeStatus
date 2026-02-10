@@ -3,14 +3,13 @@
 # Color codes
 RESET=$'\e[0m'
 BOLD=$'\e[1m'
-BLINK=$'\e[5m'
-NOBLINK=$'\e[25m'
 
 # Bright colors
 BRIGHT_RED=$'\e[91m'
 BRIGHT_GREEN=$'\e[92m'
 BRIGHT_YELLOW=$'\e[93m'
 BRIGHT_WHITE=$'\e[97m'
+BRIGHT_CYAN=$'\e[96m'
 WHITE=$'\e[37m'
 
 # Function to generate progress bar with circles
@@ -105,7 +104,7 @@ CACHE="/tmp/claude-usage-cache.json"
 REFRESH_INDICATOR=""
 
 if [ -f "$CACHE" ]; then
-    # Check if cache was updated recently (within 5 seconds)
+    # Calculate countdown to next refresh (assumes 60s fetch interval)
     TIMESTAMP=$(jq -r '.timestamp // 0' "$CACHE" 2>/dev/null)
     NOW=$(date +%s)
     TIME_DIFF=$((NOW - TIMESTAMP))
