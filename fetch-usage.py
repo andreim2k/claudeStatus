@@ -155,6 +155,7 @@ def fetch_usage():
         sections = re.split(r'(Curre[tn]*\s*(?:session|week))', clean)
 
         s, s_time, w, w_time, so, so_time = 0, "", 0, "", 0, ""
+        parsed_any = False
         plan = "Unknown"
         model = "Unknown"
 
@@ -190,6 +191,7 @@ def fetch_usage():
                     f.write(f"Time match: {time_match.group(1).strip() if time_match else 'NONE'}\n")
                 if pct_match:
                     s = int(pct_match.group(1))
+                    parsed_any = True
                 if time_match:
                     s_time = time_match.group(1).strip()
 
@@ -198,6 +200,7 @@ def fetch_usage():
                 time_match = re.search(r'(?:Resets?|ts)\s*([^(\r\n]+?)\s*\(', content)
                 if pct_match:
                     w = int(pct_match.group(1))
+                    parsed_any = True
                 if time_match:
                     w_time = time_match.group(1).strip()
 
@@ -206,6 +209,7 @@ def fetch_usage():
                 time_match = re.search(r'Resets\s*([^(]+?)\s*\(', content)
                 if pct_match:
                     so = int(pct_match.group(1))
+                    parsed_any = True
                 if time_match:
                     so_time = time_match.group(1).strip()
 
@@ -213,7 +217,7 @@ def fetch_usage():
             f.write(f"=== FINAL VALUES ===\n")
             f.write(f"s={s}, w={w}, so={so}\n")
 
-        if s >= 0 and w >= 0:
+        if parsed_any:
             # Format times as "Xh Ym" or "Xd Yh"
             s_time_formatted = format_time(s_time)
             w_time_formatted = format_time(w_time)
