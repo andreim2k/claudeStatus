@@ -124,7 +124,21 @@ if [ -f "$CACHE" ]; then
     fi
 
     PLAN=$(jq -r '.plan // "Unknown"' "$CACHE" 2>/dev/null)
-    MODEL_DISPLAY=$(jq -r '.model // "Unknown"' "$CACHE" 2>/dev/null)
+
+    # Auto-detect model from the most recent Claude session log
+    LATEST_SESSION=$(ls -t ~/.claude/projects/*/?.jsonl ~/.claude/projects/*/??.jsonl ~/.claude/projects/*/*.jsonl 2>/dev/null | head -1)
+    if [ -n "$LATEST_SESSION" ]; then
+        RAW_MODEL=$(tail -20 "$LATEST_SESSION" 2>/dev/null | grep -o '"model":"[^"]*"' | tail -1 | cut -d'"' -f4)
+        case "$RAW_MODEL" in
+            claude-opus-4-6*)    MODEL_DISPLAY="Opus 4.6" ;;
+            claude-opus-4-5*)    MODEL_DISPLAY="Opus 4.5" ;;
+            claude-sonnet-4-5*)  MODEL_DISPLAY="Sonnet 4.5" ;;
+            claude-haiku-4-5*)   MODEL_DISPLAY="Haiku 4.5" ;;
+            *)                   MODEL_DISPLAY=$(jq -r '.model // "Unknown"' "$CACHE" 2>/dev/null) ;;
+        esac
+    else
+        MODEL_DISPLAY=$(jq -r '.model // "Unknown"' "$CACHE" 2>/dev/null)
+    fi
 
     SESSION_PCT=$(jq -r '.five_hour.utilization // 0' "$CACHE" 2>/dev/null | cut -d. -f1)
     SESSION_TIME=$(jq -r '.five_hour.reset_time // ""' "$CACHE" 2>/dev/null)

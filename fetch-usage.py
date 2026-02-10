@@ -34,20 +34,28 @@ def get_credentials():
     }
 
 
-def get_model():
-    """Read active model from Claude settings"""
+def get_model(plan):
+    """Read active model from Claude settings, falling back to plan default"""
     model_map = {
         "opus": "Opus 4.6",
         "sonnet": "Sonnet 4.5",
         "haiku": "Haiku 4.5",
     }
+    plan_defaults = {"Max": "opus", "Pro": "sonnet", "Free": "sonnet"}
+
+    # Check global settings
     settings_path = os.path.expanduser("~/.claude/settings.json")
     try:
         with open(settings_path) as f:
-            model = json.load(f).get("model", "sonnet")
-        return model_map.get(model.lower(), model.capitalize())
+            model = json.load(f).get("model")
+        if model:
+            return model_map.get(model.lower(), model.capitalize())
     except Exception:
-        return "Sonnet 4.5"
+        pass
+
+    # Fall back to plan default
+    default = plan_defaults.get(plan, "sonnet")
+    return model_map[default]
 
 
 def format_reset_time(iso_timestamp):
@@ -90,7 +98,7 @@ def fetch_usage():
             return False
 
         plan = creds["plan"] if creds["plan"] in ("Pro", "Max") else "Free"
-        model = get_model()
+        model = get_model(plan)
         debug_lines.append(f"Plan: {plan}, Model: {model}")
 
         # Call API via curl (avoids Python SSL cert issues on macOS)
