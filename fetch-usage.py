@@ -16,7 +16,9 @@ def get_credentials():
     """Read OAuth credentials from macOS Keychain"""
     result = subprocess.run(
         ["security", "find-generic-password", "-s", "Claude Code-credentials", "-w"],
-        capture_output=True, text=True, timeout=5
+        capture_output=True,
+        text=True,
+        timeout=5,
     )
     if result.returncode != 0:
         return None
@@ -50,8 +52,9 @@ def get_model(plan):
             model = json.load(f).get("model")
         if model:
             return model_map.get(model.lower(), model.capitalize())
-    except Exception:
-        pass
+    except Exception as e:
+        logging.error("Failed to read settings.json", exc_info=True)
+        # Continue to fallback logic
 
     # Fall back to plan default
     default = plan_defaults.get(plan, "sonnet")
@@ -83,6 +86,12 @@ def format_reset_time(iso_timestamp):
         return f"{minutes}m"
 
 
+import logging
+
+# Configure basic logging to DEBUG level; logs will also be written to the debug file
+logging.basicConfig(level=logging.DEBUG, format="%(asctime)s %(levelname)s %(message)s")
+
+
 def fetch_usage():
     """Fetch usage data from Anthropic API"""
     debug_lines = []
@@ -91,10 +100,13 @@ def fetch_usage():
         creds = get_credentials()
         if not creds:
             debug_lines.append("No credentials found in Keychain")
+            logging.error("Missing credentials in Keychain")
             return False
 
         if time.time() > creds["expires_at"]:
             debug_lines.append("Token expired")
+            logging.warning("OAuth token expired; consider implementing refresh logic")
+            # TODO: Implement token refresh flow here
             return False
 
         plan = creds["plan"] if creds["plan"] in ("Pro", "Max") else "Free"
@@ -103,17 +115,32 @@ def fetch_usage():
 
         # Call API via curl (avoids Python SSL cert issues on macOS)
         result = subprocess.run(
-            ["curl", "-s", "--max-time", "10",
-             "-H", f"Authorization: Bearer {creds['access_token']}",
-             "-H", "anthropic-beta: oauth-2025-04-20",
-             "https://api.anthropic.com/api/oauth/usage"],
-            capture_output=True, text=True, timeout=15
+            [
+                "curl",
+                "-s",
+                "--max-time",
+                "10",
+                "-H",
+                f"Authorization: Bearer {creds['access_token']}",
+                "-H",
+                "anthropic-beta: oauth-2025-04-20",
+                "https://api.anthropic.com/api/oauth/usage",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=15,
         )
         if result.returncode != 0:
             debug_lines.append(f"curl failed: {result.stderr}")
             return False
 
-        api_data = json.loads(result.stdout)
+        # Parse JSON safely
+        try:
+            api_data = json.loads(result.stdout)
+        except json.JSONDecodeError as jde:
+            debug_lines.append(f"Failed to parse JSON response: {jde}")
+            logging.error("JSON decode error", exc_info=True)
+            return False
 
         debug_lines.append(f"API response: {json.dumps(api_data, indent=2)}")
 

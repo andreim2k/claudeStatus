@@ -105,7 +105,26 @@ REFRESH_INDICATOR=""
 
 if [ -f "$CACHE" ]; then
     # Calculate countdown to next refresh (assumes 60s fetch interval)
-    TIMESTAMP=$(jq -r '.timestamp // 0' "$CACHE" 2>/dev/null)
+    # Extract needed fields from cache in one jq call
+    read -r TIMESTAMP PLAN MODEL \
+        SESSION_PCT SESSION_TIME \
+        WEEK_ALL_PCT WEEK_ALL_TIME \
+        WEEK_SONNET_PCT WEEK_SONNET_TIME <<<$(jq -r '
+            .timestamp // 0,
+            .plan // "Unknown",
+            .model // "Unknown",
+            (.five_hour.utilization // 0) | tostring,
+            (.five_hour.reset_time // ""),
+            (.seven_day.utilization // 0) | tostring,
+            (.seven_day.reset_time // ""),
+            (.seven_day_sonnet.utilization // 0) | tostring,
+            (.seven_day_sonnet.reset_time // "")
+        ' "$CACHE")
+    # Ensure percentage values are integers
+    SESSION_PCT=${SESSION_PCT%%.*}
+    WEEK_ALL_PCT=${WEEK_ALL_PCT%%.*}
+    WEEK_SONNET_PCT=${WEEK_SONNET_PCT%%.*}
+
     NOW=$(date +%s)
     TIME_DIFF=$((NOW - TIMESTAMP))
 
@@ -123,8 +142,6 @@ if [ -f "$CACHE" ]; then
         REFRESH_INDICATOR="${BRIGHT_GREEN}↻${RESET}${BRIGHT_GREEN}${NEXT_REFRESH}s${RESET} "
     fi
 
-    PLAN=$(jq -r '.plan // "Unknown"' "$CACHE" 2>/dev/null)
-
     # Auto-detect model from the most recent Claude session log
     # Parses any "claude-{name}-{version}" model ID into "{Name} {version}" display format
     LATEST_SESSION=$(ls -t ~/.claude/projects/*/*.jsonl 2>/dev/null | head -1)
@@ -140,14 +157,14 @@ if [ -f "$CACHE" ]; then
     fi
     [ -z "$MODEL_DISPLAY" ] && MODEL_DISPLAY=$(jq -r '.model // "Unknown"' "$CACHE" 2>/dev/null)
 
-    SESSION_PCT=$(jq -r '.five_hour.utilization // 0' "$CACHE" 2>/dev/null | cut -d. -f1)
-    SESSION_TIME=$(jq -r '.five_hour.reset_time // ""' "$CACHE" 2>/dev/null)
+    # SESSION_PCT=$(jq -r '.five_hour.utilization // 0' "$CACHE" 2>/dev/null | cut -d. -f1)
+    # SESSION_TIME=$(jq -r '.five_hour.reset_time // ""' "$CACHE" 2>/dev/null)
 
-    WEEK_ALL_PCT=$(jq -r '.seven_day.utilization // 0' "$CACHE" 2>/dev/null | cut -d. -f1)
-    WEEK_ALL_TIME=$(jq -r '.seven_day.reset_time // ""' "$CACHE" 2>/dev/null)
+    # WEEK_ALL_PCT=$(jq -r '.seven_day.utilization // 0' "$CACHE" 2>/dev/null | cut -d. -f1)
+    # WEEK_ALL_TIME=$(jq -r '.seven_day.reset_time // ""' "$CACHE" 2>/dev/null)
 
-    WEEK_SONNET_PCT=$(jq -r '.seven_day_sonnet.utilization // 0' "$CACHE" 2>/dev/null | cut -d. -f1)
-    WEEK_SONNET_TIME=$(jq -r '.seven_day_sonnet.reset_time // ""' "$CACHE" 2>/dev/null)
+    # WEEK_SONNET_PCT=$(jq -r '.seven_day_sonnet.utilization // 0' "$CACHE" 2>/dev/null | cut -d. -f1)
+    # WEEK_SONNET_TIME=$(jq -r '.seven_day_sonnet.reset_time // ""' "$CACHE" 2>/dev/null)
 
     # Colorize
     SESSION_PCT_COLOR=$(color_percentage "${SESSION_PCT:-0}")
