@@ -104,22 +104,28 @@ CACHE="/tmp/claude-usage-cache.json"
 REFRESH_INDICATOR=""
 
 if [ -f "$CACHE" ]; then
-    # Calculate countdown to next refresh (assumes 60s fetch interval)
-    # Extract needed fields from cache in one jq call
-    read -r TIMESTAMP PLAN MODEL \
-        SESSION_PCT SESSION_TIME \
-        WEEK_ALL_PCT WEEK_ALL_TIME \
-        WEEK_SONNET_PCT WEEK_SONNET_TIME <<<$(jq -r '
-            .timestamp // 0,
-            .plan // "Unknown",
-            .model // "Unknown",
-            (.five_hour.utilization // 0) | tostring,
-            (.five_hour.reset_time // ""),
-            (.seven_day.utilization // 0) | tostring,
-            (.seven_day.reset_time // ""),
-            (.seven_day_sonnet.utilization // 0) | tostring,
-            (.seven_day_sonnet.reset_time // "")
+    # Extract needed fields from cache using jq
+    CACHE_DATA=$(jq -r '
+            (.timestamp // 0),
+            (.plan // "Unknown"),
+            (.model // "Unknown"),
+            (((.five_hour // {}).utilization // 0) | tostring),
+            (((.five_hour // {}).reset_time // "")),
+            (((.seven_day // {}).utilization // 0) | tostring),
+            (((.seven_day // {}).reset_time // "")),
+            (((.seven_day_sonnet // {}).utilization // 0) | tostring),
+            (((.seven_day_sonnet // {}).reset_time // ""))
         ' "$CACHE")
+
+    TIMESTAMP=$(echo "$CACHE_DATA" | sed -n '1p')
+    PLAN=$(echo "$CACHE_DATA" | sed -n '2p')
+    MODEL=$(echo "$CACHE_DATA" | sed -n '3p')
+    SESSION_PCT=$(echo "$CACHE_DATA" | sed -n '4p')
+    SESSION_TIME=$(echo "$CACHE_DATA" | sed -n '5p')
+    WEEK_ALL_PCT=$(echo "$CACHE_DATA" | sed -n '6p')
+    WEEK_ALL_TIME=$(echo "$CACHE_DATA" | sed -n '7p')
+    WEEK_SONNET_PCT=$(echo "$CACHE_DATA" | sed -n '8p')
+    WEEK_SONNET_TIME=$(echo "$CACHE_DATA" | sed -n '9p')
     # Ensure percentage values are integers
     SESSION_PCT=${SESSION_PCT%%.*}
     WEEK_ALL_PCT=${WEEK_ALL_PCT%%.*}
