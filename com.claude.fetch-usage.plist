@@ -15,8 +15,8 @@
     </dict>
     <key>ProgramArguments</key>
     <array>
-        <string>/Library/Frameworks/Python.framework/Versions/3.13/bin/python3</string>
-        <string>/Users/andrei/.claude/fetch-usage.py</string>
+        <string>/bin/bash</string>
+        <string>/Users/andrei/.claude/fetch-usage-if-running.sh</string>
     </array>
     <key>StartInterval</key>
     <integer>120</integer>
