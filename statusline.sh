@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# ============================================================================
+# Configuration
+# ============================================================================
+FETCH_INTERVAL=120  # seconds (2 minutes) - matches launchd StartInterval
+
+# ============================================================================
 # Color codes - bright and vibrant
 RESET=$'\e[0m'
 BOLD=$'\e[1m'
@@ -103,9 +109,9 @@ if [ -f "$CACHE" ]; then
       REFRESH_TIME="$((TIME_DIFF / 3600))h"
     fi
 
-    # Calculate time until next API attempt (fetch runs every 120 seconds)
+    # Calculate time until next API attempt
     TIME_SINCE_FETCH=$((CURRENT_TIME - TIMESTAMP))
-    NEXT_ATTEMPT=$((120 - TIME_SINCE_FETCH))
+    NEXT_ATTEMPT=$((FETCH_INTERVAL - TIME_SINCE_FETCH))
     if [ $NEXT_ATTEMPT -lt 0 ]; then
       NEXT_ATTEMPT=0
     fi
@@ -174,12 +180,16 @@ if [ -f "$CACHE" ]; then
         fi
 
         # Add refresh indicator - based on last successful API call
-        if [ $TIME_DIFF -lt 120 ]; then
-            REFRESH_COLOR="${BRIGHT_GREEN}"  # Fresh (< 2min) - API recently succeeded
-        elif [ $TIME_DIFF -lt 240 ]; then
-            REFRESH_COLOR="${BRIGHT_YELLOW}"  # Waiting (2-4min) - next API call expected
+        THRESHOLD_GREEN=$FETCH_INTERVAL
+        THRESHOLD_YELLOW=$((FETCH_INTERVAL * 2))
+        THRESHOLD_RED=$((FETCH_INTERVAL * 2 + 60))
+
+        if [ $TIME_DIFF -lt $THRESHOLD_GREEN ]; then
+            REFRESH_COLOR="${BRIGHT_GREEN}"  # Fresh - API recently succeeded
+        elif [ $TIME_DIFF -lt $THRESHOLD_YELLOW ]; then
+            REFRESH_COLOR="${BRIGHT_YELLOW}"  # Waiting - next API call expected
         else
-            REFRESH_COLOR="${BRIGHT_RED}"  # Stale (> 4min) - API calls failing
+            REFRESH_COLOR="${BRIGHT_RED}"  # Stale - API calls failing
         fi
         OUTPUT="${OUTPUT} ${WHITE}|${RESET} ${REFRESH_COLOR}⟳${RESET} ${WHITE}${REFRESH_TIME}${RESET} ${WHITE}(+${NEXT_ATTEMPT}s)${RESET}"
 
