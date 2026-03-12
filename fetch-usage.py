@@ -12,6 +12,62 @@ import glob
 CACHE = "/tmp/claude-usage-cache.json"
 DEBUG = "/tmp/claude-fetch-debug.txt"
 
+# Model context windows (effective usable size accounting for system reserves)
+MODEL_CONTEXT_WINDOWS = {
+    "claude-opus-4-6": 1000000,      # 1M
+    "claude-opus-4": 200000,         # 200k
+    "claude-sonnet-4-6": 200000,     # 200k
+    "claude-sonnet-4": 200000,       # 200k
+    "claude-3-5-sonnet": 200000,     # 200k
+    "claude-3-sonnet": 200000,       # 200k
+    "claude-haiku-4-5": 169000,      # ~169k effective (200k documented - reserves)
+    "claude-haiku-3": 100000,        # 100k
+}
+
+
+def get_model_from_session():
+    """Get the current model from the latest session log"""
+    try:
+        sessions_dir = os.path.expanduser("~/.claude/projects")
+        latest_session = max(
+            glob.glob(os.path.join(sessions_dir, "*/*.jsonl")),
+            key=os.path.getmtime,
+            default=None
+        )
+        if not latest_session:
+            return None
+
+        with open(latest_session, 'r') as f:
+            for line in reversed(list(f)):
+                try:
+                    entry = json.loads(line)
+                    # Model is in message.model
+                    if isinstance(entry.get('message'), dict) and 'model' in entry['message']:
+                        return entry['message']['model']
+                except Exception:
+                    pass
+    except Exception:
+        pass
+    return None
+
+
+def get_context_window():
+    """Get context window size for the current model"""
+    model = get_model_from_session()
+    if not model:
+        return 200000  # Default fallback
+
+    # Try exact match first
+    if model in MODEL_CONTEXT_WINDOWS:
+        return MODEL_CONTEXT_WINDOWS[model]
+
+    # Try prefix matching (e.g., "claude-opus-4-6-20250101" -> "claude-opus-4-6")
+    for key in MODEL_CONTEXT_WINDOWS:
+        if model.startswith(key):
+            return MODEL_CONTEXT_WINDOWS[key]
+
+    return 200000  # Default fallback
+
 
 def get_credentials():
     """Read OAuth credentials from macOS Keychain"""
@@ -71,6 +127,8 @@ def format_reset_time(iso_timestamp):
 
 def calculate_context_usage():
     """Calculate tokens used in current session"""
+    ctx_max = get_context_window()
+
     try:
         sessions_dir = os.path.expanduser("~/.claude/projects")
 
@@ -84,7 +142,7 @@ def calculate_context_usage():
                 latest_session = jsonl_file
 
         if not latest_session:
-            return 0, 200000
+            return 0, ctx_max
 
         last_total_tokens = 0
         with open(latest_session, 'r') as f:
@@ -105,9 +163,9 @@ def calculate_context_usage():
                 except Exception:
                     pass
 
-        return last_total_tokens, 200000
+        return last_total_tokens, ctx_max
     except Exception:
-        return 0, 200000
+        return 0, ctx_max
 
 
 def fetch_usage():

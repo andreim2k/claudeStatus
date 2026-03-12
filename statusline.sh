@@ -75,22 +75,22 @@ get_model() {
 CACHE="/tmp/claude-usage-cache.json"
 
 if [ -f "$CACHE" ]; then
-    # Extract all values in single jq call
+    # Extract all values in single jq call, properly quoted
     eval "$(jq -r '
-      "TIMESTAMP=\(.timestamp // 0)",
-      "PLAN=\(.plan // "Unknown")",
-      "API_STATUS=\(.api_status // "unknown")",
-      "LAST_API_SUCCESS=\(.last_api_success // 0)",
-      "SESSION_PCT=\((.five_hour.utilization // null) | if . == null then "NA" else (. | floor | tostring) end)",
-      "SESSION_TIME=\(.five_hour.reset_time // "N/A")",
-      "WEEK_PCT=\((.seven_day.utilization // null) | if . == null then "NA" else (. | floor | tostring) end)",
-      "WEEK_TIME=\(.seven_day.reset_time // "N/A")",
-      "EXTRA_PCT=\((.extra_usage.utilization // null) | if . == null then "NA" else (. | floor | tostring) end)",
-      "EXTRA_ENABLED=\(.extra_usage.enabled // false)",
-      "EXTRA_INFO=\(.extra_usage.info // "N/A")",
-      "CTX_PCT=\((.context_usage.utilization // 0) | floor)",
-      "CTX_USED=\(.context_usage.tokens_used // 0)",
-      "CTX_MAX=\(.context_usage.tokens_max // 200000)"
+      "TIMESTAMP=\"\(.timestamp // 0)\"",
+      "PLAN=\"\(.plan // "Unknown")\"",
+      "API_STATUS=\"\(.api_status // "unknown")\"",
+      "LAST_API_SUCCESS=\"\(.last_api_success // 0)\"",
+      "SESSION_PCT=\"\((.five_hour.utilization // null) | if . == null then "NA" else (. | floor | tostring) end)\"",
+      "SESSION_TIME=\"\(.five_hour.reset_time // "N/A")\"",
+      "WEEK_PCT=\"\((.seven_day.utilization // null) | if . == null then "NA" else (. | floor | tostring) end)\"",
+      "WEEK_TIME=\"\(.seven_day.reset_time // "N/A")\"",
+      "EXTRA_PCT=\"\((.extra_usage.utilization // null) | if . == null then "NA" else (. | floor | tostring) end)\"",
+      "EXTRA_ENABLED=\"\(.extra_usage.enabled // false)\"",
+      "EXTRA_INFO=\"\(.extra_usage.info // "N/A")\"",
+      "CTX_PCT=\"\((.context_usage.utilization // 0) | floor)\"",
+      "CTX_USED=\"\(.context_usage.tokens_used // 0)\"",
+      "CTX_MAX=\"\(.context_usage.tokens_max // 200000)\""
     ' "$CACHE" 2>/dev/null)"
 
     # Calculate time since last successful API call (not just fetch)
