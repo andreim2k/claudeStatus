@@ -53,9 +53,11 @@ get_model() {
     if [ -n "$LATEST_SESSION" ]; then
         RAW_MODEL=$(tail -20 "$LATEST_SESSION" 2>/dev/null | grep -o '"model":"[^"]*"' | tail -1 | cut -d'"' -f4)
         if [ -n "$RAW_MODEL" ]; then
-            # Extract name and version: "claude-opus-4-6" -> "Opus 4.6"
-            MODEL_NAME=$(echo "$RAW_MODEL" | sed 's/^claude-//' | sed 's/-[0-9].*//' | awk '{print toupper(substr($0,1,1)) substr($0,2)}')
-            MODEL_VER=$(echo "$RAW_MODEL" | grep -oE '[0-9]+-[0-9]+' | head -1 | tr '-' '.')
+            # Extract name and version: "claude-opus-4-6" -> "Opus 4.6", "claude-3-5-sonnet" -> "Sonnet 3.5"
+            MODEL_NAME=$(echo "$RAW_MODEL" | sed 's/^claude-//' | sed 's/-[0-9][0-9]*-[0-9][0-9]*[0-9-]*$//' | awk '{print toupper(substr($0,1,1)) substr($0,2)}')
+            MODEL_VER=$(echo "$RAW_MODEL" | grep -oE '[0-9]+\.[0-9]+' | head -1)
+            # Fall back to dash-separated version if no dot version found
+            [ -z "$MODEL_VER" ] && MODEL_VER=$(echo "$RAW_MODEL" | grep -oE '[0-9]+-[0-9]+' | head -1 | tr '-' '.')
             if [ -n "$MODEL_NAME" ] && [ -n "$MODEL_VER" ]; then
                 echo "$MODEL_NAME $MODEL_VER"
             fi
@@ -63,64 +65,29 @@ get_model() {
     fi
 }
 
-# Get context window for model
-get_context_window() {
-    local model=$1
-    case "$model" in
-        *Opus*)
-            echo "200k"
-            ;;
-        *Sonnet*)
-            echo "200k"
-            ;;
-        *Haiku*)
-            echo "200k"
-            ;;
-        *)
-            echo ""
-            ;;
-    esac
-}
-
 # Read from cache
 CACHE="/tmp/claude-usage-cache.json"
 
 if [ -f "$CACHE" ]; then
-    CACHE_DATA=$(jq -r '
-        .timestamp // 0,
-        .plan // "Unknown",
-        .five_hour.utilization // 0,
-        .five_hour.reset_time // "",
-        .seven_day.utilization // 0,
-        .seven_day.reset_time // "",
-        .extra_usage.utilization // 0,
-        .extra_usage.enabled // false,
-        .extra_usage.info // "",
-        .context_usage.utilization // 0,
-        .context_usage.tokens_used // 0,
-        .context_usage.tokens_max // 200000
-    ' "$CACHE" 2>/dev/null)
+    # Extract all values in single jq call
+    eval "$(jq -r '
+      "TIMESTAMP=\(.timestamp // 0)",
+      "PLAN=\(.plan // "Unknown")",
+      "SESSION_PCT=\((.five_hour.utilization // 0) | floor)",
+      "SESSION_TIME=\(.five_hour.reset_time // "")",
+      "WEEK_PCT=\((.seven_day.utilization // 0) | floor)",
+      "WEEK_TIME=\(.seven_day.reset_time // "")",
+      "EXTRA_PCT=\((.extra_usage.utilization // 0) | floor)",
+      "EXTRA_ENABLED=\(.extra_usage.enabled // false)",
+      "EXTRA_INFO=\(.extra_usage.info // "")",
+      "CTX_PCT=\((.context_usage.utilization // 0) | floor)",
+      "CTX_USED=\(.context_usage.tokens_used // 0)",
+      "CTX_MAX=\(.context_usage.tokens_max // 200000)"
+    ' "$CACHE" 2>/dev/null)"
 
-    if [ $? -eq 0 ]; then
-        TIMESTAMP=$(echo "$CACHE_DATA" | sed -n '1p')
-        PLAN=$(echo "$CACHE_DATA" | sed -n '2p')
-        SESSION_PCT=$(echo "$CACHE_DATA" | sed -n '3p' | cut -d. -f1)
-        SESSION_TIME=$(echo "$CACHE_DATA" | sed -n '4p')
-        WEEK_PCT=$(echo "$CACHE_DATA" | sed -n '5p' | cut -d. -f1)
-        WEEK_TIME=$(echo "$CACHE_DATA" | sed -n '6p')
-        EXTRA_PCT=$(echo "$CACHE_DATA" | sed -n '7p' | cut -d. -f1)
-        EXTRA_ENABLED=$(echo "$CACHE_DATA" | sed -n '8p')
-        EXTRA_INFO=$(echo "$CACHE_DATA" | sed -n '9p')
-        CTX_PCT=$(echo "$CACHE_DATA" | sed -n '10p' | cut -d. -f1)
-        CTX_USED=$(echo "$CACHE_DATA" | sed -n '11p')
-        CTX_MAX=$(echo "$CACHE_DATA" | sed -n '12p')
-
-        # Get model and context window
+    if [ -n "$PLAN" ]; then
+        # Get model
         MODEL=$(get_model)
-        CTX=""
-        if [ -n "$MODEL" ]; then
-            CTX=$(get_context_window "$MODEL")
-        fi
 
         # Color percentages
         SESSION_COLOR=$(color_percentage "${SESSION_PCT:-0}")
@@ -137,8 +104,8 @@ if [ -f "$CACHE" ]; then
         fi
 
         # Format context tokens in k (e.g., 31k/200k)
-        CTX_USED_K=$((CTX_USED / 1000))
-        CTX_MAX_K=$((CTX_MAX / 1000))
+        CTX_USED_K=$(( ${CTX_USED:-0} / 1000 ))
+        CTX_MAX_K=$(( ${CTX_MAX:-200000} / 1000 ))
 
         OUTPUT="${OUTPUT} ${WHITE}|${RESET} ${BRIGHT_WHITE}Ctx:${RESET} ${CTX_COLOR} ${BRIGHT_CYAN}${CTX_USED_K}k/${CTX_MAX_K}k${RESET}"
         OUTPUT="${OUTPUT} ${WHITE}|${RESET} ${BRIGHT_WHITE}Ses:${RESET} ${SESSION_COLOR} ${BRIGHT_GREEN}${SESSION_TIME}${RESET}"

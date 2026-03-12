@@ -7,6 +7,7 @@ import subprocess
 import sys
 import time
 import datetime
+import glob
 
 CACHE = "/tmp/claude-usage-cache.json"
 DEBUG = "/tmp/claude-fetch-debug.txt"
@@ -23,7 +24,10 @@ def get_credentials():
     if result.returncode != 0:
         return None
 
-    creds = json.loads(result.stdout.strip())
+    try:
+        creds = json.loads(result.stdout.strip())
+    except json.JSONDecodeError:
+        return None
     oauth = creds.get("claudeAiOauth", {})
     access_token = oauth.get("accessToken")
     if not access_token:
@@ -44,7 +48,7 @@ def format_reset_time(iso_timestamp):
     ts = iso_timestamp.replace("Z", "+00:00")
     try:
         reset_date = datetime.datetime.fromisoformat(ts)
-    except:
+    except Exception:
         return ""
 
     now = datetime.datetime.now(datetime.timezone.utc)
@@ -68,7 +72,6 @@ def format_reset_time(iso_timestamp):
 def calculate_context_usage():
     """Calculate tokens used in current session"""
     try:
-        import glob
         sessions_dir = os.path.expanduser("~/.claude/projects")
 
         # Find most recently modified .jsonl file
@@ -83,7 +86,7 @@ def calculate_context_usage():
         if not latest_session:
             return 0, 200000
 
-        total_tokens = 0
+        last_input_tokens = 0
         with open(latest_session, 'r') as f:
             for line in f:
                 try:
@@ -92,15 +95,12 @@ def calculate_context_usage():
                     if 'message' in entry and isinstance(entry['message'], dict):
                         msg = entry['message']
                         if 'usage' in msg and isinstance(msg['usage'], dict):
-                            usage = msg['usage']
-                            # Sum input and output tokens
-                            total_tokens += usage.get('input_tokens', 0)
-                            total_tokens += usage.get('output_tokens', 0)
-                except:
+                            last_input_tokens = msg['usage'].get('input_tokens', last_input_tokens)
+                except Exception:
                     pass
 
-        return total_tokens, 200000
-    except:
+        return last_input_tokens, 200000
+    except Exception:
         return 0, 200000
 
 
@@ -149,6 +149,11 @@ def fetch_usage():
             debug_lines.append(f"Failed to parse JSON response: {jde}")
             return False
 
+        # Check for API error
+        if "error" in api_data:
+            debug_lines.append(f"API error: {api_data['error']}")
+            return False
+
         debug_lines.append(f"API response: {json.dumps(api_data, indent=2)}")
 
         # Calculate context usage
@@ -159,12 +164,6 @@ def fetch_usage():
         five_hour = api_data.get("five_hour") or {}
         seven_day = api_data.get("seven_day") or {}
         extra_usage = api_data.get("extra_usage") or {}
-
-        # Get all model-specific usage (opus, sonnet, etc.)
-        model_usage = {}
-        for key in ["seven_day_opus", "seven_day_sonnet", "seven_day_cowork"]:
-            if api_data.get(key):
-                model_usage[key] = api_data[key]
 
         five_h_util = int(five_hour.get("utilization", 0))
         seven_d_util = int(seven_day.get("utilization", 0))
@@ -203,13 +202,11 @@ def fetch_usage():
                 "tokens_used": ctx_used,
                 "tokens_max": ctx_max,
             },
-            "model_usage": model_usage,
         }
 
         with open(CACHE, "w") as f:
             json.dump(data, f)
 
-        print(f"S:{five_h_util}% W:{seven_d_util}% E:{extra_util}%")
         return True
 
     except Exception as e:
