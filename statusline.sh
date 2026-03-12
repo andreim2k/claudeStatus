@@ -162,12 +162,13 @@ if [ -f "$CACHE" ]; then
         fi
 
         # Add refresh indicator - changes color based on freshness
+        # (fetch interval is 2 minutes)
         if [ $TIME_DIFF -lt 120 ]; then
-            REFRESH_COLOR="${BRIGHT_GREEN}"  # Fresh (< 2min)
-        elif [ $TIME_DIFF -lt 300 ]; then
-            REFRESH_COLOR="${BRIGHT_YELLOW}"  # Stale (2-5min)
+            REFRESH_COLOR="${BRIGHT_GREEN}"  # Fresh (< 2min) - just fetched
+        elif [ $TIME_DIFF -lt 240 ]; then
+            REFRESH_COLOR="${BRIGHT_YELLOW}"  # Waiting (2-4min) - next fetch coming
         else
-            REFRESH_COLOR="${BRIGHT_RED}"  # Very stale (> 5min)
+            REFRESH_COLOR="${BRIGHT_RED}"  # Stale (> 4min) - fetch likely failed
         fi
         OUTPUT="${OUTPUT} ${WHITE}|${RESET} ${REFRESH_COLOR}⟳${RESET} ${WHITE}${REFRESH_TIME}${RESET}"
 
