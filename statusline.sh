@@ -109,6 +109,15 @@ if [ -f "$CACHE" ]; then
       REFRESH_TIME="$((TIME_DIFF / 3600))h"
     fi
 
+    # Format configured interval for display
+    if [ $FETCH_INTERVAL -lt 60 ]; then
+      INTERVAL_DISPLAY="${FETCH_INTERVAL}s"
+    elif [ $FETCH_INTERVAL -lt 3600 ]; then
+      INTERVAL_DISPLAY="$((FETCH_INTERVAL / 60))m"
+    else
+      INTERVAL_DISPLAY="$((FETCH_INTERVAL / 3600))h"
+    fi
+
 
     if [ -n "$PLAN" ]; then
         # Get model
@@ -185,7 +194,7 @@ if [ -f "$CACHE" ]; then
         else
             REFRESH_COLOR="${BRIGHT_RED}"  # Stale - API calls failing
         fi
-        OUTPUT="${OUTPUT} ${WHITE}|${RESET} ${REFRESH_COLOR}⟳${RESET} ${WHITE}${REFRESH_TIME}${RESET}"
+        OUTPUT="${OUTPUT} ${WHITE}|${RESET} ${REFRESH_COLOR}⟳${RESET} ${WHITE}${REFRESH_TIME}${RESET} ${BRIGHT_WHITE}(${INTERVAL_DISPLAY})${RESET}"
 
         echo "$OUTPUT"
     else
