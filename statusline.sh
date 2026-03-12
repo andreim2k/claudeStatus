@@ -87,9 +87,14 @@ if [ -f "$CACHE" ]; then
       "CTX_MAX=\(.context_usage.tokens_max // 200000)"
     ' "$CACHE" 2>/dev/null)"
 
-    # Calculate time since last refresh
+    # Calculate time since last successful API call (not just fetch)
     CURRENT_TIME=$(date +%s)
-    TIME_DIFF=$((CURRENT_TIME - TIMESTAMP))
+    if [ "$LAST_API_SUCCESS" -gt 0 ]; then
+      TIME_DIFF=$((CURRENT_TIME - LAST_API_SUCCESS))
+    else
+      TIME_DIFF=$((CURRENT_TIME - TIMESTAMP))
+    fi
+
     if [ $TIME_DIFF -lt 60 ]; then
       REFRESH_TIME="${TIME_DIFF}s"
     elif [ $TIME_DIFF -lt 3600 ]; then
@@ -161,14 +166,13 @@ if [ -f "$CACHE" ]; then
             OUTPUT="${OUTPUT} ${BRIGHT_RED}⚠${RESET}"
         fi
 
-        # Add refresh indicator - changes color based on freshness
-        # (fetch interval is 2 minutes)
+        # Add refresh indicator - based on last successful API call
         if [ $TIME_DIFF -lt 120 ]; then
-            REFRESH_COLOR="${BRIGHT_GREEN}"  # Fresh (< 2min) - just fetched
+            REFRESH_COLOR="${BRIGHT_GREEN}"  # Fresh (< 2min) - API recently succeeded
         elif [ $TIME_DIFF -lt 240 ]; then
-            REFRESH_COLOR="${BRIGHT_YELLOW}"  # Waiting (2-4min) - next fetch coming
+            REFRESH_COLOR="${BRIGHT_YELLOW}"  # Waiting (2-4min) - next API call expected
         else
-            REFRESH_COLOR="${BRIGHT_RED}"  # Stale (> 4min) - fetch likely failed
+            REFRESH_COLOR="${BRIGHT_RED}"  # Stale (> 4min) - API calls failing
         fi
         OUTPUT="${OUTPUT} ${WHITE}|${RESET} ${REFRESH_COLOR}⟳${RESET} ${WHITE}${REFRESH_TIME}${RESET}"
 
