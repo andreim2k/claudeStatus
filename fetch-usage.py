@@ -86,7 +86,7 @@ def calculate_context_usage():
         if not latest_session:
             return 0, 200000
 
-        last_input_tokens = 0
+        last_total_tokens = 0
         with open(latest_session, 'r') as f:
             for line in f:
                 try:
@@ -95,11 +95,16 @@ def calculate_context_usage():
                     if 'message' in entry and isinstance(entry['message'], dict):
                         msg = entry['message']
                         if 'usage' in msg and isinstance(msg['usage'], dict):
-                            last_input_tokens = msg['usage'].get('input_tokens', last_input_tokens)
+                            usage = msg['usage']
+                            # Sum all token types: input + cache read + cache creation
+                            total = usage.get('input_tokens', 0)
+                            total += usage.get('cache_read_input_tokens', 0)
+                            total += usage.get('cache_creation_input_tokens', 0)
+                            last_total_tokens = total
                 except Exception:
                     pass
 
-        return last_input_tokens, 200000
+        return last_total_tokens, 200000
     except Exception:
         return 0, 200000
 
@@ -107,96 +112,68 @@ def calculate_context_usage():
 def fetch_usage():
     """Fetch usage data from Anthropic API"""
     debug_lines = []
+    api_success = False
 
     try:
         creds = get_credentials()
         if not creds:
             debug_lines.append("No credentials found in Keychain")
-            return False
-
-        if time.time() > creds["expires_at"]:
+        elif time.time() > creds["expires_at"]:
             debug_lines.append("Token expired")
-            return False
+        else:
+            plan = creds["plan"] if creds["plan"] in ("Pro", "Max") else "Free"
+            debug_lines.append(f"Plan: {plan}")
 
-        plan = creds["plan"] if creds["plan"] in ("Pro", "Max") else "Free"
-        debug_lines.append(f"Plan: {plan}")
+            # Call API
+            result = subprocess.run(
+                [
+                    "curl",
+                    "-s",
+                    "--max-time",
+                    "10",
+                    "-H",
+                    f"Authorization: Bearer {creds['access_token']}",
+                    "-H",
+                    "anthropic-beta: oauth-2025-04-20",
+                    "https://api.anthropic.com/api/oauth/usage",
+                ],
+                capture_output=True,
+                text=True,
+                timeout=15,
+            )
+            if result.returncode == 0:
+                try:
+                    api_data = json.loads(result.stdout)
+                    if "error" not in api_data:
+                        debug_lines.append("API success")
+                        api_success = True
+                    else:
+                        debug_lines.append(f"API error: {api_data['error']}")
+                except json.JSONDecodeError as jde:
+                    debug_lines.append(f"JSON parse error: {jde}")
+            else:
+                debug_lines.append(f"curl failed: {result.stderr}")
 
-        # Call API
-        result = subprocess.run(
-            [
-                "curl",
-                "-s",
-                "--max-time",
-                "10",
-                "-H",
-                f"Authorization: Bearer {creds['access_token']}",
-                "-H",
-                "anthropic-beta: oauth-2025-04-20",
-                "https://api.anthropic.com/api/oauth/usage",
-            ],
-            capture_output=True,
-            text=True,
-            timeout=15,
-        )
-        if result.returncode != 0:
-            debug_lines.append(f"curl failed: {result.stderr}")
-            return False
-
-        # Parse JSON
-        try:
-            api_data = json.loads(result.stdout)
-        except json.JSONDecodeError as jde:
-            debug_lines.append(f"Failed to parse JSON response: {jde}")
-            return False
-
-        # Check for API error
-        if "error" in api_data:
-            debug_lines.append(f"API error: {api_data['error']}")
-            return False
-
-        debug_lines.append(f"API response: {json.dumps(api_data, indent=2)}")
-
-        # Calculate context usage
+        # Always calculate context (local, not API-dependent)
         ctx_used, ctx_max = calculate_context_usage()
-        debug_lines.append(f"Context: {ctx_used} / {ctx_max} tokens")
-
-        # Extract all relevant data
-        five_hour = api_data.get("five_hour") or {}
-        seven_day = api_data.get("seven_day") or {}
-        extra_usage = api_data.get("extra_usage") or {}
-
-        five_h_util = int(five_hour.get("utilization", 0))
-        seven_d_util = int(seven_day.get("utilization", 0))
-        extra_util = int(extra_usage.get("utilization", 0)) if extra_usage else 0
-
-        five_h_reset = format_reset_time(five_hour.get("resets_at", ""))
-        seven_d_reset = format_reset_time(seven_day.get("resets_at", ""))
-
-        # Format extra usage info
-        extra_info = ""
-        if extra_usage and extra_usage.get("is_enabled"):
-            spent = extra_usage.get("used_credits", 0) / 100  # Convert to dollars
-            limit = extra_usage.get("monthly_limit", 0) / 100
-            extra_info = f"${spent:.2f} / ${limit:.2f}"
-
-        # Write cache
         ctx_pct = int((ctx_used / ctx_max) * 100) if ctx_max > 0 else 0
+        debug_lines.append(f"Context: {ctx_used} / {ctx_max} tokens ({ctx_pct}%)")
+
+        # Load existing cache to preserve old values
+        old_data = {}
+        if os.path.exists(CACHE):
+            try:
+                with open(CACHE, "r") as f:
+                    old_data = json.load(f)
+            except:
+                pass
+
+        # Build new cache data
         data = {
             "timestamp": int(time.time()),
-            "plan": plan,
-            "five_hour": {
-                "utilization": five_h_util,
-                "reset_time": five_h_reset,
-            },
-            "seven_day": {
-                "utilization": seven_d_util,
-                "reset_time": seven_d_reset,
-            },
-            "extra_usage": {
-                "utilization": extra_util,
-                "enabled": extra_usage.get("is_enabled", False),
-                "info": extra_info,
-            },
+            "plan": old_data.get("plan", "Unknown"),
+            "last_api_success": int(time.time()) if api_success else old_data.get("last_api_success", 0),
+            "api_status": "success" if api_success else "error",
             "context_usage": {
                 "utilization": ctx_pct,
                 "tokens_used": ctx_used,
@@ -204,10 +181,60 @@ def fetch_usage():
             },
         }
 
+        # Add API data if successful, otherwise use N/A markers
+        if api_success:
+            five_hour = api_data.get("five_hour") or {}
+            seven_day = api_data.get("seven_day") or {}
+            extra_usage = api_data.get("extra_usage") or {}
+
+            five_h_util = int(five_hour.get("utilization", 0))
+            seven_d_util = int(seven_day.get("utilization", 0))
+            extra_util = int(extra_usage.get("utilization", 0)) if extra_usage else 0
+
+            five_h_reset = format_reset_time(five_hour.get("resets_at", ""))
+            seven_d_reset = format_reset_time(seven_day.get("resets_at", ""))
+
+            extra_info = ""
+            if extra_usage and extra_usage.get("is_enabled"):
+                spent = extra_usage.get("used_credits", 0) / 100
+                limit = extra_usage.get("monthly_limit", 0) / 100
+                extra_info = f"${spent:.2f} / ${limit:.2f}"
+
+            data["plan"] = plan
+            data["five_hour"] = {
+                "utilization": five_h_util,
+                "reset_time": five_h_reset,
+            }
+            data["seven_day"] = {
+                "utilization": seven_d_util,
+                "reset_time": seven_d_reset,
+            }
+            data["extra_usage"] = {
+                "utilization": extra_util,
+                "enabled": extra_usage.get("is_enabled", False),
+                "info": extra_info,
+            }
+        else:
+            # API failed - preserve old values or mark as N/A
+            data["five_hour"] = old_data.get("five_hour", {
+                "utilization": None,
+                "reset_time": "N/A",
+            })
+            data["seven_day"] = old_data.get("seven_day", {
+                "utilization": None,
+                "reset_time": "N/A",
+            })
+            data["extra_usage"] = old_data.get("extra_usage", {
+                "utilization": None,
+                "enabled": False,
+                "info": "N/A",
+            })
+
+        # Write cache
         with open(CACHE, "w") as f:
             json.dump(data, f)
 
-        return True
+        return api_success
 
     except Exception as e:
         debug_lines.append(f"Error: {e}")

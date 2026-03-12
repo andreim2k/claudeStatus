@@ -73,13 +73,15 @@ if [ -f "$CACHE" ]; then
     eval "$(jq -r '
       "TIMESTAMP=\(.timestamp // 0)",
       "PLAN=\(.plan // "Unknown")",
-      "SESSION_PCT=\((.five_hour.utilization // 0) | floor)",
-      "SESSION_TIME=\(.five_hour.reset_time // "")",
-      "WEEK_PCT=\((.seven_day.utilization // 0) | floor)",
-      "WEEK_TIME=\(.seven_day.reset_time // "")",
-      "EXTRA_PCT=\((.extra_usage.utilization // 0) | floor)",
+      "API_STATUS=\(.api_status // "unknown")",
+      "LAST_API_SUCCESS=\(.last_api_success // 0)",
+      "SESSION_PCT=\((.five_hour.utilization // null) | if . == null then "NA" else (. | floor | tostring) end)",
+      "SESSION_TIME=\(.five_hour.reset_time // "N/A")",
+      "WEEK_PCT=\((.seven_day.utilization // null) | if . == null then "NA" else (. | floor | tostring) end)",
+      "WEEK_TIME=\(.seven_day.reset_time // "N/A")",
+      "EXTRA_PCT=\((.extra_usage.utilization // null) | if . == null then "NA" else (. | floor | tostring) end)",
       "EXTRA_ENABLED=\(.extra_usage.enabled // false)",
-      "EXTRA_INFO=\(.extra_usage.info // "")",
+      "EXTRA_INFO=\(.extra_usage.info // "N/A")",
       "CTX_PCT=\((.context_usage.utilization // 0) | floor)",
       "CTX_USED=\(.context_usage.tokens_used // 0)",
       "CTX_MAX=\(.context_usage.tokens_max // 200000)"
@@ -89,10 +91,25 @@ if [ -f "$CACHE" ]; then
         # Get model
         MODEL=$(get_model)
 
-        # Color percentages
-        SESSION_COLOR=$(color_percentage "${SESSION_PCT:-0}")
-        WEEK_COLOR=$(color_percentage "${WEEK_PCT:-0}")
-        EXTRA_COLOR=$(color_percentage "${EXTRA_PCT:-0}")
+        # Handle N/A values - show N/A when API failed or value is null
+        if [ "$API_STATUS" = "error" ] || [ "$SESSION_PCT" = "NA" ]; then
+            SESSION_COLOR="${BRIGHT_RED}N/A${RESET}"
+        else
+            SESSION_COLOR=$(color_percentage "${SESSION_PCT:-0}")
+        fi
+
+        if [ "$API_STATUS" = "error" ] || [ "$WEEK_PCT" = "NA" ]; then
+            WEEK_COLOR="${BRIGHT_RED}N/A${RESET}"
+        else
+            WEEK_COLOR=$(color_percentage "${WEEK_PCT:-0}")
+        fi
+
+        if [ "$API_STATUS" = "error" ] || [ "$EXTRA_PCT" = "NA" ]; then
+            EXTRA_COLOR="${BRIGHT_RED}N/A${RESET}"
+        else
+            EXTRA_COLOR=$(color_percentage "${EXTRA_PCT:-0}")
+        fi
+
         CTX_COLOR=$(color_percentage "${CTX_PCT:-0}")
 
         # Build output
@@ -108,12 +125,29 @@ if [ -f "$CACHE" ]; then
         CTX_MAX_K=$(( ${CTX_MAX:-200000} / 1000 ))
 
         OUTPUT="${OUTPUT} ${WHITE}|${RESET} ${BRIGHT_WHITE}Ctx:${RESET} ${CTX_COLOR} ${BRIGHT_CYAN}${CTX_USED_K}k/${CTX_MAX_K}k${RESET}"
-        OUTPUT="${OUTPUT} ${WHITE}|${RESET} ${BRIGHT_WHITE}Ses:${RESET} ${SESSION_COLOR} ${BRIGHT_GREEN}${SESSION_TIME}${RESET}"
-        OUTPUT="${OUTPUT} ${WHITE}|${RESET} ${BRIGHT_WHITE}Wek:${RESET} ${WEEK_COLOR} ${BRIGHT_GREEN}${WEEK_TIME}${RESET}"
+
+        if [ "$API_STATUS" = "error" ]; then
+            OUTPUT="${OUTPUT} ${WHITE}|${RESET} ${BRIGHT_WHITE}Ses:${RESET} ${SESSION_COLOR}"
+        else
+            OUTPUT="${OUTPUT} ${WHITE}|${RESET} ${BRIGHT_WHITE}Ses:${RESET} ${SESSION_COLOR} ${BRIGHT_GREEN}${SESSION_TIME}${RESET}"
+        fi
+
+        if [ "$API_STATUS" = "error" ]; then
+            OUTPUT="${OUTPUT} ${WHITE}|${RESET} ${BRIGHT_WHITE}Wek:${RESET} ${WEEK_COLOR}"
+        else
+            OUTPUT="${OUTPUT} ${WHITE}|${RESET} ${BRIGHT_WHITE}Wek:${RESET} ${WEEK_COLOR} ${BRIGHT_GREEN}${WEEK_TIME}${RESET}"
+        fi
 
         # Add extra usage if enabled
-        if [ "$EXTRA_ENABLED" = "true" ] && [ -n "$EXTRA_INFO" ]; then
+        if [ "$EXTRA_ENABLED" = "true" ] && [ "$EXTRA_INFO" != "N/A" ] && [ -n "$EXTRA_INFO" ]; then
             OUTPUT="${OUTPUT} ${WHITE}|${RESET} ${BRIGHT_MAGENTA}Ext:${RESET} ${EXTRA_COLOR} ${BRIGHT_CYAN}${EXTRA_INFO}${RESET}"
+        elif [ "$API_STATUS" = "error" ]; then
+            OUTPUT="${OUTPUT} ${WHITE}|${RESET} ${BRIGHT_MAGENTA}Ext:${RESET} ${BRIGHT_RED}N/A${RESET}"
+        fi
+
+        # Add API status indicator
+        if [ "$API_STATUS" = "error" ]; then
+            OUTPUT="${OUTPUT} ${BRIGHT_RED}⚠${RESET}"
         fi
 
         echo "$OUTPUT"
