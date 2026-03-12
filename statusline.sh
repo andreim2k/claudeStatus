@@ -109,12 +109,6 @@ if [ -f "$CACHE" ]; then
       REFRESH_TIME="$((TIME_DIFF / 3600))h"
     fi
 
-    # Calculate time until next API attempt
-    TIME_SINCE_FETCH=$((CURRENT_TIME - TIMESTAMP))
-    NEXT_ATTEMPT=$((FETCH_INTERVAL - TIME_SINCE_FETCH))
-    if [ $NEXT_ATTEMPT -lt 0 ]; then
-      NEXT_ATTEMPT=0
-    fi
 
     if [ -n "$PLAN" ]; then
         # Get model
@@ -191,7 +185,7 @@ if [ -f "$CACHE" ]; then
         else
             REFRESH_COLOR="${BRIGHT_RED}"  # Stale - API calls failing
         fi
-        OUTPUT="${OUTPUT} ${WHITE}|${RESET} ${REFRESH_COLOR}⟳${RESET} ${WHITE}${REFRESH_TIME}${RESET} ${WHITE}(+${NEXT_ATTEMPT}s)${RESET}"
+        OUTPUT="${OUTPUT} ${WHITE}|${RESET} ${REFRESH_COLOR}⟳${RESET} ${WHITE}${REFRESH_TIME}${RESET}"
 
         echo "$OUTPUT"
     else
