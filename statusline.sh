@@ -87,6 +87,17 @@ if [ -f "$CACHE" ]; then
       "CTX_MAX=\(.context_usage.tokens_max // 200000)"
     ' "$CACHE" 2>/dev/null)"
 
+    # Calculate time since last refresh
+    CURRENT_TIME=$(date +%s)
+    TIME_DIFF=$((CURRENT_TIME - TIMESTAMP))
+    if [ $TIME_DIFF -lt 60 ]; then
+      REFRESH_TIME="${TIME_DIFF}s"
+    elif [ $TIME_DIFF -lt 3600 ]; then
+      REFRESH_TIME="$((TIME_DIFF / 60))m"
+    else
+      REFRESH_TIME="$((TIME_DIFF / 3600))h"
+    fi
+
     if [ -n "$PLAN" ]; then
         # Get model
         MODEL=$(get_model)
@@ -145,10 +156,20 @@ if [ -f "$CACHE" ]; then
             OUTPUT="${OUTPUT} ${WHITE}|${RESET} ${BRIGHT_MAGENTA}Ext:${RESET} ${BRIGHT_RED}N/A${RESET}"
         fi
 
-        # Add API status indicator
+        # Add API status indicator and refresh time
         if [ "$API_STATUS" = "error" ]; then
             OUTPUT="${OUTPUT} ${BRIGHT_RED}⚠${RESET}"
         fi
+
+        # Add refresh indicator - changes color based on freshness
+        if [ $TIME_DIFF -lt 120 ]; then
+            REFRESH_COLOR="${BRIGHT_GREEN}"  # Fresh (< 2min)
+        elif [ $TIME_DIFF -lt 300 ]; then
+            REFRESH_COLOR="${BRIGHT_YELLOW}"  # Stale (2-5min)
+        else
+            REFRESH_COLOR="${BRIGHT_RED}"  # Very stale (> 5min)
+        fi
+        OUTPUT="${OUTPUT} ${WHITE}|${RESET} ${REFRESH_COLOR}⟳${RESET} ${WHITE}${REFRESH_TIME}${RESET}"
 
         echo "$OUTPUT"
     else
