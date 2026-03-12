@@ -96,10 +96,11 @@ def calculate_context_usage():
                         msg = entry['message']
                         if 'usage' in msg and isinstance(msg['usage'], dict):
                             usage = msg['usage']
-                            # Sum all token types: input + cache read + cache creation
+                            # Sum all token types: input + cache read + cache creation + output
                             total = usage.get('input_tokens', 0)
                             total += usage.get('cache_read_input_tokens', 0)
                             total += usage.get('cache_creation_input_tokens', 0)
+                            total += usage.get('output_tokens', 0)
                             last_total_tokens = total
                 except Exception:
                     pass
