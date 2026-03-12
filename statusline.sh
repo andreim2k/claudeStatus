@@ -131,12 +131,9 @@ if [ -f "$CACHE" ]; then
         # Build output
         OUTPUT="${BRIGHT_WHITE}${BOLD}[${PLAN}]${RESET}"
 
-        # Add model and context if available
+        # Add model if available
         if [ -n "$MODEL" ]; then
             OUTPUT="${OUTPUT} ${BRIGHT_CYAN}${MODEL}${RESET}"
-            if [ -n "$CTX" ]; then
-                OUTPUT="${OUTPUT} ${BRIGHT_YELLOW}${CTX}ctx${RESET}"
-            fi
         fi
 
         # Format context tokens in k (e.g., 31k/200k)
