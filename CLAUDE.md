@@ -2,6 +2,46 @@
 
 ## Status Bar Setup
 
+Displays real-time Claude usage with plan, session, weekly, and extra credit usage.
+
+### Hook Configuration
+
+```json
+{
+  "hooks": {
+    "StatusBar": [
+      {
+        "type": "command",
+        "command": "bash /Users/andrei/.claude/statusline.sh"
+      }
+    ]
+  }
+}
+```
+
+### How It Works
+
+1. **fetch-usage.py** runs every 60 seconds via launchd agent
+2. Calls `https://api.anthropic.com/api/oauth/usage` with OAuth token
+3. Caches full API response in `/tmp/claude-usage-cache.json`
+4. **statusline.sh** reads cache and formats for display with progress bars
+5. Shows: Plan, Session usage (5h window), Weekly usage (7d window), Extra credit usage
+
+### Setup
+
+Run these commands to enable:
+```bash
+launchctl load /Users/andrei/Library/LaunchAgents/com.claude.fetch-usage.plist
+```
+
+Check status:
+```bash
+launchctl list | grep fetch-usage
+tail -f /tmp/claude-fetch-debug.txt
+```
+
+## Status Bar Setup
+
 This project uses a custom status bar hook to display Claude usage information.
 
 ### Hooks
