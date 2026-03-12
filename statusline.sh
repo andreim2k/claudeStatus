@@ -3,7 +3,7 @@
 # ============================================================================
 # Configuration
 # ============================================================================
-FETCH_INTERVAL=120  # seconds (2 minutes) - matches launchd StartInterval
+FETCH_INTERVAL=180  # seconds (3 minutes) - matches launchd StartInterval
 
 # ============================================================================
 # Color codes - bright and vibrant
