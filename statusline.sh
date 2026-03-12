@@ -75,7 +75,7 @@ get_model() {
 CACHE="/tmp/claude-usage-cache.json"
 
 if [ -f "$CACHE" ]; then
-    # Extract all values in single jq call, properly quoted
+    # Extract all values in single jq call, properly quoted and escaped
     eval "$(jq -r '
       "TIMESTAMP=\"\(.timestamp // 0)\"",
       "PLAN=\"\(.plan // "Unknown")\"",
@@ -87,7 +87,7 @@ if [ -f "$CACHE" ]; then
       "WEEK_TIME=\"\(.seven_day.reset_time // "N/A")\"",
       "EXTRA_PCT=\"\((.extra_usage.utilization // null) | if . == null then "NA" else (. | floor | tostring) end)\"",
       "EXTRA_ENABLED=\"\(.extra_usage.enabled // false)\"",
-      "EXTRA_INFO=\"\(.extra_usage.info // "N/A")\"",
+      ("EXTRA_INFO=" + ((.extra_usage.info // "N/A") | @sh)),
       "CTX_PCT=\"\((.context_usage.utilization // 0) | floor)\"",
       "CTX_USED=\"\(.context_usage.tokens_used // 0)\"",
       "CTX_MAX=\"\(.context_usage.tokens_max // 200000)\""
