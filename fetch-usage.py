@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fetch Claude usage data via Anthropic API"""
+"""Fetch Claude usage data via Anthropic API and cache it"""
 
 import json
 import os
@@ -36,38 +36,17 @@ def get_credentials():
     }
 
 
-def get_model(plan):
-    """Read active model from Claude settings, falling back to plan default"""
-    model_map = {
-        "opus": "Opus 4.6",
-        "sonnet": "Sonnet 4.5",
-        "haiku": "Haiku 4.5",
-    }
-    plan_defaults = {"Max": "opus", "Pro": "sonnet", "Free": "sonnet"}
-
-    # Check global settings
-    settings_path = os.path.expanduser("~/.claude/settings.json")
-    try:
-        with open(settings_path) as f:
-            model = json.load(f).get("model")
-        if model:
-            return model_map.get(model.lower(), model.capitalize())
-    except Exception as e:
-        logging.error("Failed to read settings.json", exc_info=True)
-        # Continue to fallback logic
-
-    # Fall back to plan default
-    default = plan_defaults.get(plan, "sonnet")
-    return model_map[default]
-
-
 def format_reset_time(iso_timestamp):
     """Convert ISO 8601 timestamp to relative time like '3h35m' or '6d15h'"""
     if not iso_timestamp:
         return ""
 
     ts = iso_timestamp.replace("Z", "+00:00")
-    reset_date = datetime.datetime.fromisoformat(ts)
+    try:
+        reset_date = datetime.datetime.fromisoformat(ts)
+    except:
+        return ""
+
     now = datetime.datetime.now(datetime.timezone.utc)
 
     total_seconds = int((reset_date - now).total_seconds())
@@ -86,10 +65,43 @@ def format_reset_time(iso_timestamp):
         return f"{minutes}m"
 
 
-import logging
+def calculate_context_usage():
+    """Calculate tokens used in current session"""
+    try:
+        import glob
+        sessions_dir = os.path.expanduser("~/.claude/projects")
 
-# Configure basic logging to DEBUG level; logs will also be written to the debug file
-logging.basicConfig(level=logging.DEBUG, format="%(asctime)s %(levelname)s %(message)s")
+        # Find most recently modified .jsonl file
+        latest_session = None
+        latest_mtime = 0
+        for jsonl_file in glob.glob(os.path.join(sessions_dir, "*/*.jsonl")):
+            mtime = os.path.getmtime(jsonl_file)
+            if mtime > latest_mtime:
+                latest_mtime = mtime
+                latest_session = jsonl_file
+
+        if not latest_session:
+            return 0, 200000
+
+        total_tokens = 0
+        with open(latest_session, 'r') as f:
+            for line in f:
+                try:
+                    entry = json.loads(line)
+                    # Check for message with usage data
+                    if 'message' in entry and isinstance(entry['message'], dict):
+                        msg = entry['message']
+                        if 'usage' in msg and isinstance(msg['usage'], dict):
+                            usage = msg['usage']
+                            # Sum input and output tokens
+                            total_tokens += usage.get('input_tokens', 0)
+                            total_tokens += usage.get('output_tokens', 0)
+                except:
+                    pass
+
+        return total_tokens, 200000
+    except:
+        return 0, 200000
 
 
 def fetch_usage():
@@ -100,20 +112,16 @@ def fetch_usage():
         creds = get_credentials()
         if not creds:
             debug_lines.append("No credentials found in Keychain")
-            logging.error("Missing credentials in Keychain")
             return False
 
         if time.time() > creds["expires_at"]:
             debug_lines.append("Token expired")
-            logging.warning("OAuth token expired; consider implementing refresh logic")
-            # TODO: Implement token refresh flow here
             return False
 
         plan = creds["plan"] if creds["plan"] in ("Pro", "Max") else "Free"
-        model = get_model(plan)
-        debug_lines.append(f"Plan: {plan}, Model: {model}")
+        debug_lines.append(f"Plan: {plan}")
 
-        # Call API via curl (avoids Python SSL cert issues on macOS)
+        # Call API
         result = subprocess.run(
             [
                 "curl",
@@ -134,52 +142,74 @@ def fetch_usage():
             debug_lines.append(f"curl failed: {result.stderr}")
             return False
 
-        # Parse JSON safely
+        # Parse JSON
         try:
             api_data = json.loads(result.stdout)
         except json.JSONDecodeError as jde:
             debug_lines.append(f"Failed to parse JSON response: {jde}")
-            logging.error("JSON decode error", exc_info=True)
             return False
 
         debug_lines.append(f"API response: {json.dumps(api_data, indent=2)}")
 
-        # Parse response
+        # Calculate context usage
+        ctx_used, ctx_max = calculate_context_usage()
+        debug_lines.append(f"Context: {ctx_used} / {ctx_max} tokens")
+
+        # Extract all relevant data
         five_hour = api_data.get("five_hour") or {}
         seven_day = api_data.get("seven_day") or {}
-        seven_day_sonnet = api_data.get("seven_day_sonnet") or {}
+        extra_usage = api_data.get("extra_usage") or {}
 
-        s = int(five_hour.get("utilization", 0))
-        w = int(seven_day.get("utilization", 0))
-        so = int(seven_day_sonnet.get("utilization", 0))
+        # Get all model-specific usage (opus, sonnet, etc.)
+        model_usage = {}
+        for key in ["seven_day_opus", "seven_day_sonnet", "seven_day_cowork"]:
+            if api_data.get(key):
+                model_usage[key] = api_data[key]
 
-        s_time = format_reset_time(five_hour.get("resets_at"))
-        w_time = format_reset_time(seven_day.get("resets_at"))
-        so_time = format_reset_time(seven_day_sonnet.get("resets_at"))
+        five_h_util = int(five_hour.get("utilization", 0))
+        seven_d_util = int(seven_day.get("utilization", 0))
+        extra_util = int(extra_usage.get("utilization", 0)) if extra_usage else 0
+
+        five_h_reset = format_reset_time(five_hour.get("resets_at", ""))
+        seven_d_reset = format_reset_time(seven_day.get("resets_at", ""))
+
+        # Format extra usage info
+        extra_info = ""
+        if extra_usage and extra_usage.get("is_enabled"):
+            spent = extra_usage.get("used_credits", 0) / 100  # Convert to dollars
+            limit = extra_usage.get("monthly_limit", 0) / 100
+            extra_info = f"${spent:.2f} / ${limit:.2f}"
 
         # Write cache
+        ctx_pct = int((ctx_used / ctx_max) * 100) if ctx_max > 0 else 0
         data = {
             "timestamp": int(time.time()),
             "plan": plan,
-            "model": model,
             "five_hour": {
-                "utilization": float(s),
-                "reset_time": s_time,
+                "utilization": five_h_util,
+                "reset_time": five_h_reset,
             },
             "seven_day": {
-                "utilization": float(w),
-                "reset_time": w_time,
+                "utilization": seven_d_util,
+                "reset_time": seven_d_reset,
             },
-            "seven_day_sonnet": {
-                "utilization": float(so),
-                "reset_time": so_time,
+            "extra_usage": {
+                "utilization": extra_util,
+                "enabled": extra_usage.get("is_enabled", False),
+                "info": extra_info,
             },
+            "context_usage": {
+                "utilization": ctx_pct,
+                "tokens_used": ctx_used,
+                "tokens_max": ctx_max,
+            },
+            "model_usage": model_usage,
         }
 
         with open(CACHE, "w") as f:
             json.dump(data, f)
 
-        print(f"S:{s}% W:{w}% So:{so}%")
+        print(f"S:{five_h_util}% W:{seven_d_util}% E:{extra_util}%")
         return True
 
     except Exception as e:

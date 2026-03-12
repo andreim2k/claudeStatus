@@ -95,7 +95,10 @@ if [ -f "$CACHE" ]; then
         .seven_day.reset_time // "",
         .extra_usage.utilization // 0,
         .extra_usage.enabled // false,
-        .extra_usage.info // ""
+        .extra_usage.info // "",
+        .context_usage.utilization // 0,
+        .context_usage.tokens_used // 0,
+        .context_usage.tokens_max // 200000
     ' "$CACHE" 2>/dev/null)
 
     if [ $? -eq 0 ]; then
@@ -108,6 +111,9 @@ if [ -f "$CACHE" ]; then
         EXTRA_PCT=$(echo "$CACHE_DATA" | sed -n '7p' | cut -d. -f1)
         EXTRA_ENABLED=$(echo "$CACHE_DATA" | sed -n '8p')
         EXTRA_INFO=$(echo "$CACHE_DATA" | sed -n '9p')
+        CTX_PCT=$(echo "$CACHE_DATA" | sed -n '10p' | cut -d. -f1)
+        CTX_USED=$(echo "$CACHE_DATA" | sed -n '11p')
+        CTX_MAX=$(echo "$CACHE_DATA" | sed -n '12p')
 
         # Get model and context window
         MODEL=$(get_model)
@@ -120,6 +126,7 @@ if [ -f "$CACHE" ]; then
         SESSION_COLOR=$(color_percentage "${SESSION_PCT:-0}")
         WEEK_COLOR=$(color_percentage "${WEEK_PCT:-0}")
         EXTRA_COLOR=$(color_percentage "${EXTRA_PCT:-0}")
+        CTX_COLOR=$(color_percentage "${CTX_PCT:-0}")
 
         # Build output
         OUTPUT="${BRIGHT_WHITE}${BOLD}[${PLAN}]${RESET}"
@@ -134,6 +141,7 @@ if [ -f "$CACHE" ]; then
 
         OUTPUT="${OUTPUT} ${WHITE}|${RESET} ${BRIGHT_WHITE}Ses:${RESET} ${SESSION_COLOR} ${BRIGHT_GREEN}${SESSION_TIME}${RESET}"
         OUTPUT="${OUTPUT} ${WHITE}|${RESET} ${BRIGHT_WHITE}Wek:${RESET} ${WEEK_COLOR} ${BRIGHT_GREEN}${WEEK_TIME}${RESET}"
+        OUTPUT="${OUTPUT} ${WHITE}|${RESET} ${BRIGHT_WHITE}Ctx:${RESET} ${CTX_COLOR} ${BRIGHT_CYAN}${CTX_USED}/${CTX_MAX}${RESET}"
 
         # Add extra usage if enabled
         if [ "$EXTRA_ENABLED" = "true" ] && [ -n "$EXTRA_INFO" ]; then
