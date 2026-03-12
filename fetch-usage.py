@@ -157,8 +157,11 @@ def fetch_usage():
 
         # Always calculate context (local, not API-dependent)
         ctx_used, ctx_max = calculate_context_usage()
-        ctx_pct = int((ctx_used / ctx_max) * 100) if ctx_max > 0 else 0
-        debug_lines.append(f"Context: {ctx_used} / {ctx_max} tokens ({ctx_pct}%)")
+        # Display percentage relative to 85% threshold (shows 100% when approaching auto-compact)
+        effective_max = ctx_max * 0.85
+        ctx_pct = int((ctx_used / effective_max) * 100) if effective_max > 0 else 0
+        ctx_pct = min(ctx_pct, 100)  # Cap at 100% for display
+        debug_lines.append(f"Context: {ctx_used} / {ctx_max} tokens ({ctx_pct}% relative to 85% threshold)")
 
         # Load existing cache to preserve old values
         old_data = {}
