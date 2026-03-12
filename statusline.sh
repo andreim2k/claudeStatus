@@ -139,9 +139,13 @@ if [ -f "$CACHE" ]; then
             fi
         fi
 
+        # Format context tokens in k (e.g., 31k/200k)
+        CTX_USED_K=$((CTX_USED / 1000))
+        CTX_MAX_K=$((CTX_MAX / 1000))
+
+        OUTPUT="${OUTPUT} ${WHITE}|${RESET} ${BRIGHT_WHITE}Ctx:${RESET} ${CTX_COLOR} ${BRIGHT_CYAN}${CTX_USED_K}k/${CTX_MAX_K}k${RESET}"
         OUTPUT="${OUTPUT} ${WHITE}|${RESET} ${BRIGHT_WHITE}Ses:${RESET} ${SESSION_COLOR} ${BRIGHT_GREEN}${SESSION_TIME}${RESET}"
         OUTPUT="${OUTPUT} ${WHITE}|${RESET} ${BRIGHT_WHITE}Wek:${RESET} ${WEEK_COLOR} ${BRIGHT_GREEN}${WEEK_TIME}${RESET}"
-        OUTPUT="${OUTPUT} ${WHITE}|${RESET} ${BRIGHT_WHITE}Ctx:${RESET} ${CTX_COLOR} ${BRIGHT_CYAN}${CTX_USED}/${CTX_MAX}${RESET}"
 
         # Add extra usage if enabled
         if [ "$EXTRA_ENABLED" = "true" ] && [ -n "$EXTRA_INFO" ]; then
