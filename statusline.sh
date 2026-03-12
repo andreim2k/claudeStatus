@@ -170,11 +170,11 @@ if [ -f "$CACHE" ]; then
             OUTPUT="${OUTPUT} ${WHITE}|${RESET} ${BRIGHT_WHITE}Wek:${RESET} ${WEEK_COLOR} ${BRIGHT_GREEN}${WEEK_TIME}${RESET}"
         fi
 
-        # Add extra usage if enabled
-        if [ "$EXTRA_ENABLED" = "true" ] && [ "$EXTRA_INFO" != "N/A" ] && [ -n "$EXTRA_INFO" ]; then
-            OUTPUT="${OUTPUT} ${WHITE}|${RESET} ${BRIGHT_MAGENTA}Ext:${RESET} ${EXTRA_COLOR} ${BRIGHT_CYAN}${EXTRA_INFO}${RESET}"
-        elif [ "$API_STATUS" = "error" ]; then
+        # Add extra usage if enabled (but only if API succeeded)
+        if [ "$API_STATUS" = "error" ]; then
             OUTPUT="${OUTPUT} ${WHITE}|${RESET} ${BRIGHT_MAGENTA}Ext:${RESET} ${BRIGHT_RED}N/A${RESET}"
+        elif [ "$EXTRA_ENABLED" = "true" ] && [ "$EXTRA_INFO" != "N/A" ] && [ -n "$EXTRA_INFO" ]; then
+            OUTPUT="${OUTPUT} ${WHITE}|${RESET} ${BRIGHT_MAGENTA}Ext:${RESET} ${EXTRA_COLOR} ${BRIGHT_CYAN}${EXTRA_INFO}${RESET}"
         fi
 
         # Add API status indicator and refresh time
