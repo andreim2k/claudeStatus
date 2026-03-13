@@ -12,15 +12,15 @@ import glob
 CACHE = "/tmp/claude-usage-cache.json"
 DEBUG = "/tmp/claude-fetch-debug.txt"
 
-# Model context windows (effective usable size accounting for system reserves)
+# Model context windows (documented limits)
 MODEL_CONTEXT_WINDOWS = {
-    "claude-opus-4-6": 1000000,      # 1M
+    "claude-opus-4-6": 200000,       # 200k
     "claude-opus-4": 200000,         # 200k
     "claude-sonnet-4-6": 200000,     # 200k
     "claude-sonnet-4": 200000,       # 200k
     "claude-3-5-sonnet": 200000,     # 200k
     "claude-3-sonnet": 200000,       # 200k
-    "claude-haiku-4-5": 169000,      # ~169k effective (200k documented - reserves)
+    "claude-haiku-4-5": 200000,      # 200k
     "claude-haiku-3": 100000,        # 100k
 }
 
