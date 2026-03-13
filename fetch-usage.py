@@ -247,6 +247,12 @@ def fetch_usage():
             seven_day = api_data.get("seven_day") or {}
             extra_usage = api_data.get("extra_usage") or {}
 
+            # Check if API response includes context_max (try to get from API first)
+            if "context_max" in api_data:
+                ctx_max = api_data["context_max"]
+            elif "max_context_tokens" in api_data:
+                ctx_max = api_data["max_context_tokens"]
+
             five_h_util = int(five_hour.get("utilization", 0))
             seven_d_util = int(seven_day.get("utilization", 0))
             extra_util = int(extra_usage.get("utilization", 0)) if extra_usage else 0
