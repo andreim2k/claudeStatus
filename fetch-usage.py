@@ -8,6 +8,11 @@ import sys
 import time
 import datetime
 import glob
+import re
+try:
+    import urllib.request
+except ImportError:
+    urllib = None
 
 CACHE = "/tmp/claude-usage-cache.json"
 DEBUG = "/tmp/claude-fetch-debug.txt"
@@ -51,17 +56,63 @@ def get_model_from_session():
     return None
 
 
+def fetch_context_windows_from_docs():
+    """Dynamically fetch context windows from Claude documentation"""
+    try:
+        if urllib is None:
+            return None
+
+        url = "https://platform.claude.com/docs/en/about-claude/models/overview"
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        response = urllib.request.urlopen(req, timeout=5)
+        html = response.read().decode('utf-8')
+
+        # Extract model info - look for patterns like "claude-X-X" with context numbers
+        models_dict = {}
+
+        # Try to find context window info in HTML (look for patterns like "200K tokens" or "200,000")
+        pattern = r'(claude-[a-z0-9\-]+).*?(\d+(?:,\d+)?)\s*[Kk]?\s*tokens?'
+        matches = re.finditer(pattern, html, re.IGNORECASE)
+
+        for match in matches:
+            model_name = match.group(1).strip()
+            context_str = match.group(2).replace(',', '')
+            try:
+                context = int(context_str)
+                # If it's in thousands, convert (e.g., "200" -> 200000)
+                if context < 1000:
+                    context *= 1000
+                models_dict[model_name] = context
+            except ValueError:
+                pass
+
+        return models_dict if models_dict else None
+    except Exception:
+        return None
+
+
 def get_context_window():
     """Get context window size for the current model"""
     model = get_model_from_session()
     if not model:
         return 200000  # Default fallback
 
-    # Try exact match first
+    # Try to get from docs first (dynamically)
+    docs_contexts = fetch_context_windows_from_docs()
+    if docs_contexts:
+        # Try exact match
+        if model in docs_contexts:
+            return docs_contexts[model]
+        # Try prefix matching
+        for key in docs_contexts:
+            if model.startswith(key):
+                return docs_contexts[key]
+
+    # Fall back to hardcoded mapping
     if model in MODEL_CONTEXT_WINDOWS:
         return MODEL_CONTEXT_WINDOWS[model]
 
-    # Try prefix matching (e.g., "claude-opus-4-6-20250101" -> "claude-opus-4-6")
+    # Try prefix matching in hardcoded mapping
     for key in MODEL_CONTEXT_WINDOWS:
         if model.startswith(key):
             return MODEL_CONTEXT_WINDOWS[key]
