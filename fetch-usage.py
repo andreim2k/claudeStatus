@@ -228,7 +228,7 @@ def fetch_usage():
         creds = get_credentials()
         if not creds:
             debug_lines.append("No credentials found in Keychain")
-        elif time.time() > creds["expires_at"]:
+        elif creds["expires_at"] > 0 and time.time() > creds["expires_at"]:
             debug_lines.append("Token expired")
         else:
             plan = creds["plan"] if creds["plan"] in ("Pro", "Max") else "Free"
@@ -269,8 +269,6 @@ def fetch_usage():
         # If tokens exceed detected max, it must be a 1M context model
         if ctx_used > ctx_max:
             ctx_max = 1000000
-        ctx_pct = int((ctx_used / ctx_max) * 100) if ctx_max > 0 else 0
-        debug_lines.append(f"Context: {ctx_used} / {ctx_max} tokens ({ctx_pct}%)")
 
         # Load existing cache to preserve old values
         old_data = {}
@@ -278,10 +276,26 @@ def fetch_usage():
             try:
                 with open(CACHE, "r") as f:
                     old_data = json.load(f)
-            except:
+            except Exception:
                 pass
 
-        # Build new cache data
+        # Add API data if successful, otherwise use N/A markers
+        if api_success:
+            five_hour = api_data.get("five_hour") or {}
+            seven_day = api_data.get("seven_day") or {}
+            extra_usage = api_data.get("extra_usage") or {}
+
+            # Check if API response includes context_max — done BEFORE building cache
+            if "context_max" in api_data:
+                ctx_max = api_data["context_max"]
+            elif "max_context_tokens" in api_data:
+                ctx_max = api_data["max_context_tokens"]
+
+        # Calculate ctx_pct AFTER ctx_max may have been updated by API
+        ctx_pct = int((ctx_used / ctx_max) * 100) if ctx_max > 0 else 0
+        debug_lines.append(f"Context: {ctx_used} / {ctx_max} tokens ({ctx_pct}%)")
+
+        # Build new cache data — ctx_max is now final
         data = {
             "timestamp": int(time.time()),
             "plan": old_data.get("plan", "Unknown"),
@@ -294,18 +308,7 @@ def fetch_usage():
             },
         }
 
-        # Add API data if successful, otherwise use N/A markers
         if api_success:
-            five_hour = api_data.get("five_hour") or {}
-            seven_day = api_data.get("seven_day") or {}
-            extra_usage = api_data.get("extra_usage") or {}
-
-            # Check if API response includes context_max (try to get from API first)
-            if "context_max" in api_data:
-                ctx_max = api_data["context_max"]
-            elif "max_context_tokens" in api_data:
-                ctx_max = api_data["max_context_tokens"]
-
             five_h_util = int(five_hour.get("utilization", 0))
             seven_d_util = int(seven_day.get("utilization", 0))
             extra_util = int(extra_usage.get("utilization", 0)) if extra_usage else 0
@@ -358,7 +361,8 @@ def fetch_usage():
     except Exception as e:
         debug_lines.append(f"Error: {e}")
     finally:
-        with open(DEBUG, "w") as f:
+        with open(DEBUG, "a") as f:
+            f.write(f"[{datetime.datetime.now():%Y-%m-%d %H:%M:%S}]\n")
             f.write("\n".join(debug_lines) + "\n")
 
     return False
