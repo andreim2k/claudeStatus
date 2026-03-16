@@ -152,11 +152,15 @@ if [ -f "$CACHE" ]; then
             OUTPUT="${OUTPUT} ${BRIGHT_CYAN}${MODEL}${RESET}"
         fi
 
-        # Format context tokens in k (e.g., 31k/200k)
+        # Format context tokens: show k for <1M, M for 1M+
         CTX_USED_K=$(( ${CTX_USED:-0} / 1000 ))
-        CTX_MAX_K=$(( ${CTX_MAX:-200000} / 1000 ))
+        if [ "${CTX_MAX:-0}" -ge 1000000 ]; then
+            CTX_MAX_DISPLAY="1M"
+        else
+            CTX_MAX_DISPLAY="$(( ${CTX_MAX:-200000} / 1000 ))k"
+        fi
 
-        OUTPUT="${OUTPUT} ${WHITE}|${RESET} ${BRIGHT_WHITE}Ctx:${RESET} ${CTX_COLOR} ${BRIGHT_CYAN}${CTX_USED_K}k/${CTX_MAX_K}k${RESET}"
+        OUTPUT="${OUTPUT} ${WHITE}|${RESET} ${BRIGHT_WHITE}Ctx:${RESET} ${CTX_COLOR} ${BRIGHT_CYAN}${CTX_USED_K}k/${CTX_MAX_DISPLAY}${RESET}"
 
         if [ "$API_STATUS" = "error" ]; then
             OUTPUT="${OUTPUT} ${WHITE}|${RESET} ${BRIGHT_WHITE}Ses:${RESET} ${SESSION_COLOR}"
