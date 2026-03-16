@@ -266,7 +266,9 @@ def fetch_usage():
 
         # Always calculate context (local, not API-dependent)
         ctx_used, ctx_max = calculate_context_usage()
-        # Display actual percentage (matches Claude Code's auto-compact warning)
+        # If tokens exceed detected max, it must be a 1M context model
+        if ctx_used > ctx_max:
+            ctx_max = 1000000
         ctx_pct = int((ctx_used / ctx_max) * 100) if ctx_max > 0 else 0
         debug_lines.append(f"Context: {ctx_used} / {ctx_max} tokens ({ctx_pct}%)")
 
