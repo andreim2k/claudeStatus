@@ -19,7 +19,10 @@ MODEL_CONTEXT_WINDOWS = {
 
 
 def get_model_from_session():
-    """Get the current model from the latest session log"""
+    """Get the current model from the latest session log.
+    Only reads model from entries with real usage data to avoid
+    picking up model names from system/environment metadata.
+    """
     try:
         sessions_dir = os.path.expanduser("~/.claude/projects")
         latest_session = max(
@@ -34,9 +37,12 @@ def get_model_from_session():
             for line in reversed(list(f)):
                 try:
                     entry = json.loads(line)
-                    # Model is in message.model
-                    if isinstance(entry.get('message'), dict) and 'model' in entry['message']:
-                        return entry['message']['model']
+                    msg = entry.get('message')
+                    if not isinstance(msg, dict):
+                        continue
+                    # Only trust model from entries with real usage data
+                    if 'model' in msg and 'usage' in msg and isinstance(msg['usage'], dict):
+                        return msg['model']
                 except Exception:
                     pass
     except Exception:
