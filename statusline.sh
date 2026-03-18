@@ -75,7 +75,7 @@ get_model() {
 CACHE="/tmp/claude-usage-cache.json"
 
 if [ -f "$CACHE" ]; then
-    # Extract all values in single jq call, properly quoted and escaped
+    # Extract all values in single jq call, use @sh for proper shell escaping
     eval "$(jq -r '
       "TIMESTAMP=\"\(.timestamp // 0)\"",
       "PLAN=\"\(.plan // "Unknown")\"",
@@ -152,11 +152,16 @@ if [ -f "$CACHE" ]; then
             OUTPUT="${OUTPUT} ${BRIGHT_CYAN}${MODEL}${RESET}"
         fi
 
-        # Format context tokens in k (e.g., 31k/200k)
+        # Format context tokens (e.g., 31k/200k or 69k/1M)
         CTX_USED_K=$(( ${CTX_USED:-0} / 1000 ))
-        CTX_MAX_K=$(( ${CTX_MAX:-200000} / 1000 ))
+        CTX_MAX_RAW=${CTX_MAX:-200000}
+        if [ "$CTX_MAX_RAW" -ge 1000000 ]; then
+            CTX_MAX_DISPLAY="$((CTX_MAX_RAW / 1000000))M"
+        else
+            CTX_MAX_DISPLAY="$((CTX_MAX_RAW / 1000))k"
+        fi
 
-        OUTPUT="${OUTPUT} ${WHITE}|${RESET} ${BRIGHT_WHITE}Ctx:${RESET} ${CTX_COLOR} ${BRIGHT_CYAN}${CTX_USED_K}k/${CTX_MAX_K}k${RESET}"
+        OUTPUT="${OUTPUT} ${WHITE}|${RESET} ${BRIGHT_WHITE}Ctx:${RESET} ${CTX_COLOR} ${BRIGHT_CYAN}${CTX_USED_K}k/${CTX_MAX_DISPLAY}${RESET}"
 
         if [ "$API_STATUS" = "error" ]; then
             OUTPUT="${OUTPUT} ${WHITE}|${RESET} ${BRIGHT_WHITE}Ses:${RESET} ${SESSION_COLOR}"
