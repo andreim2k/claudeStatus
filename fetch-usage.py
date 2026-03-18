@@ -19,9 +19,9 @@ DEBUG = "/tmp/claude-fetch-debug.txt"
 
 # Model context windows (documented limits)
 MODEL_CONTEXT_WINDOWS = {
-    "claude-opus-4-6": 200000,       # 200k
+    "claude-opus-4-6": 1000000,      # 1M
+    "claude-sonnet-4-6": 1000000,    # 1M
     "claude-opus-4": 200000,         # 200k
-    "claude-sonnet-4-6": 200000,     # 200k
     "claude-sonnet-4": 200000,       # 200k
     "claude-3-5-sonnet": 200000,     # 200k
     "claude-3-sonnet": 200000,       # 200k
