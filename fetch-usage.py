@@ -4,25 +4,34 @@
 import json
 import os
 import subprocess
+import sys
 import time
 import datetime
 import glob
+import re
+try:
+    import urllib.request
+except ImportError:
+    urllib = None
 
 CACHE = "/tmp/claude-usage-cache.json"
 DEBUG = "/tmp/claude-fetch-debug.txt"
 
-# Model context windows
-# Haiku = 200k, all others (Sonnet/Opus) = 1M
+# Model context windows (documented limits)
 MODEL_CONTEXT_WINDOWS = {
-    "claude-haiku": 200000,          # All Haiku variants: 200k
+    "claude-opus-4-6": 200000,       # 200k
+    "claude-opus-4": 200000,         # 200k
+    "claude-sonnet-4-6": 200000,     # 200k
+    "claude-sonnet-4": 200000,       # 200k
+    "claude-3-5-sonnet": 200000,     # 200k
+    "claude-3-sonnet": 200000,       # 200k
+    "claude-haiku-4-5": 200000,      # 200k
+    "claude-haiku-3": 100000,        # 100k
 }
 
 
 def get_model_from_session():
-    """Get the current model from the latest session log.
-    Only reads model from entries with real usage data to avoid
-    picking up model names from system/environment metadata.
-    """
+    """Get the current model from the latest session log"""
     try:
         sessions_dir = os.path.expanduser("~/.claude/projects")
         latest_session = max(
@@ -37,12 +46,9 @@ def get_model_from_session():
             for line in reversed(list(f)):
                 try:
                     entry = json.loads(line)
-                    msg = entry.get('message')
-                    if not isinstance(msg, dict):
-                        continue
-                    # Only trust model from entries with real usage data
-                    if 'model' in msg and 'usage' in msg and isinstance(msg['usage'], dict):
-                        return msg['model']
+                    # Model is in message.model
+                    if isinstance(entry.get('message'), dict) and 'model' in entry['message']:
+                        return entry['message']['model']
                 except Exception:
                     pass
     except Exception:
@@ -50,20 +56,22 @@ def get_model_from_session():
     return None
 
 
-
 def get_context_window():
-    """Get context window size for the current model.
-    Haiku = 200k, everything else (Sonnet/Opus) = 1M.
-    """
+    """Get context window size for the current model"""
     model = get_model_from_session()
     if not model:
-        return 1000000  # Default: 1M
+        return 200000  # Default fallback
 
-    # Haiku is the only model with 200k context
-    if "haiku" in model.lower():
-        return 200000
+    # Use hardcoded mapping (verified against official docs)
+    if model in MODEL_CONTEXT_WINDOWS:
+        return MODEL_CONTEXT_WINDOWS[model]
 
-    return 1000000  # Sonnet, Opus and all others: 1M
+    # Try prefix matching in hardcoded mapping
+    for key in MODEL_CONTEXT_WINDOWS:
+        if model.startswith(key):
+            return MODEL_CONTEXT_WINDOWS[key]
+
+    return 200000  # Default fallback
 
 
 def get_credentials():
@@ -174,7 +182,7 @@ def fetch_usage():
         creds = get_credentials()
         if not creds:
             debug_lines.append("No credentials found in Keychain")
-        elif creds["expires_at"] > 0 and time.time() > creds["expires_at"]:
+        elif time.time() > creds["expires_at"]:
             debug_lines.append("Token expired")
         else:
             plan = creds["plan"] if creds["plan"] in ("Pro", "Max") else "Free"
@@ -212,9 +220,9 @@ def fetch_usage():
 
         # Always calculate context (local, not API-dependent)
         ctx_used, ctx_max = calculate_context_usage()
-        # If tokens exceed detected max, it must be a 1M context model
-        if ctx_used > ctx_max:
-            ctx_max = 1000000
+        # Display actual percentage (matches Claude Code's auto-compact warning)
+        ctx_pct = int((ctx_used / ctx_max) * 100) if ctx_max > 0 else 0
+        debug_lines.append(f"Context: {ctx_used} / {ctx_max} tokens ({ctx_pct}%)")
 
         # Load existing cache to preserve old values
         old_data = {}
@@ -222,26 +230,10 @@ def fetch_usage():
             try:
                 with open(CACHE, "r") as f:
                     old_data = json.load(f)
-            except Exception:
+            except:
                 pass
 
-        # Add API data if successful, otherwise use N/A markers
-        if api_success:
-            five_hour = api_data.get("five_hour") or {}
-            seven_day = api_data.get("seven_day") or {}
-            extra_usage = api_data.get("extra_usage") or {}
-
-            # Check if API response includes context_max — done BEFORE building cache
-            if "context_max" in api_data:
-                ctx_max = api_data["context_max"]
-            elif "max_context_tokens" in api_data:
-                ctx_max = api_data["max_context_tokens"]
-
-        # Calculate ctx_pct AFTER ctx_max may have been updated by API
-        ctx_pct = int((ctx_used / ctx_max) * 100) if ctx_max > 0 else 0
-        debug_lines.append(f"Context: {ctx_used} / {ctx_max} tokens ({ctx_pct}%)")
-
-        # Build new cache data — ctx_max is now final
+        # Build new cache data
         data = {
             "timestamp": int(time.time()),
             "plan": old_data.get("plan", "Unknown"),
@@ -254,7 +246,12 @@ def fetch_usage():
             },
         }
 
+        # Add API data if successful, otherwise use N/A markers
         if api_success:
+            five_hour = api_data.get("five_hour") or {}
+            seven_day = api_data.get("seven_day") or {}
+            extra_usage = api_data.get("extra_usage") or {}
+
             five_h_util = int(five_hour.get("utilization", 0))
             seven_d_util = int(seven_day.get("utilization", 0))
             extra_util = int(extra_usage.get("utilization", 0)) if extra_usage else 0
@@ -307,8 +304,7 @@ def fetch_usage():
     except Exception as e:
         debug_lines.append(f"Error: {e}")
     finally:
-        with open(DEBUG, "a") as f:
-            f.write(f"[{datetime.datetime.now():%Y-%m-%d %H:%M:%S}]\n")
+        with open(DEBUG, "w") as f:
             f.write("\n".join(debug_lines) + "\n")
 
     return False
