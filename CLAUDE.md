@@ -161,9 +161,7 @@ Active: [new session]
 Last: [first session]
 
 ## Last Session Bridge
-[proactive bridge @ 94% context — saved before compacting]
-Files (2):
-  /Users/andrei/.claude/fetch-usage.py (edit)
-  fetch-usage.py (edit)
+[Emergency bridge — running bridge was not updated]
+No changes or facts in this session.
 
 # === END COGNILAYER ===
