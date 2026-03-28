@@ -31,26 +31,30 @@ MODEL_CONTEXT_WINDOWS = {
 
 
 def get_model_from_session():
-    """Get the current model from the latest session log"""
+    """Get the current model from the latest session log entry across all sessions"""
     try:
         sessions_dir = os.path.expanduser("~/.claude/projects")
-        latest_session = max(
+        # Get all session files modified in last day
+        all_sessions = sorted(
             glob.glob(os.path.join(sessions_dir, "*/*.jsonl")),
             key=os.path.getmtime,
-            default=None
+            reverse=True
         )
-        if not latest_session:
-            return None
 
-        with open(latest_session, 'r') as f:
-            for line in reversed(list(f)):
-                try:
-                    entry = json.loads(line)
-                    # Model is in message.model
-                    if isinstance(entry.get('message'), dict) and 'model' in entry['message']:
-                        return entry['message']['model']
-                except Exception:
-                    pass
+        # Search most recent files first for latest model entry
+        for session_file in all_sessions[:5]:  # Check top 5 most recent
+            try:
+                with open(session_file, 'r') as f:
+                    for line in reversed(list(f)):
+                        try:
+                            entry = json.loads(line)
+                            # Model is in message.model
+                            if isinstance(entry.get('message'), dict) and 'model' in entry['message']:
+                                return entry['message']['model']
+                        except Exception:
+                            pass
+            except Exception:
+                pass
     except Exception:
         pass
     return None

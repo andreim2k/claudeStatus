@@ -53,20 +53,18 @@ color_percentage() {
     fi
 }
 
-# Get model from session logs
+# Get model from session logs (latest across all files)
 get_model() {
-    LATEST_SESSION=$(ls -t ~/.claude/projects/*/*.jsonl 2>/dev/null | head -1)
-    if [ -n "$LATEST_SESSION" ]; then
-        RAW_MODEL=$(tail -20 "$LATEST_SESSION" 2>/dev/null | grep -o '"model":"[^"]*"' | tail -1 | cut -d'"' -f4)
-        if [ -n "$RAW_MODEL" ]; then
-            # Extract name and version: "claude-opus-4-6" -> "Opus 4.6", "claude-3-5-sonnet" -> "Sonnet 3.5"
-            MODEL_NAME=$(echo "$RAW_MODEL" | sed 's/^claude-//' | sed 's/-[0-9][0-9]*-[0-9][0-9]*[0-9-]*$//' | awk '{print toupper(substr($0,1,1)) substr($0,2)}')
-            MODEL_VER=$(echo "$RAW_MODEL" | grep -oE '[0-9]+\.[0-9]+' | head -1)
-            # Fall back to dash-separated version if no dot version found
-            [ -z "$MODEL_VER" ] && MODEL_VER=$(echo "$RAW_MODEL" | grep -oE '[0-9]+-[0-9]+' | head -1 | tr '-' '.')
-            if [ -n "$MODEL_NAME" ] && [ -n "$MODEL_VER" ]; then
-                echo "$MODEL_NAME $MODEL_VER"
-            fi
+    # Search most recent session files for the latest model entry
+    RAW_MODEL=$(ls -t ~/.claude/projects/*/*.jsonl 2>/dev/null | head -5 | xargs tail -50 2>/dev/null | grep -o '"model":"[^"]*"' | tail -1 | cut -d'"' -f4)
+    if [ -n "$RAW_MODEL" ]; then
+        # Extract name and version: "claude-opus-4-6" -> "Opus 4.6", "claude-3-5-sonnet" -> "Sonnet 3.5"
+        MODEL_NAME=$(echo "$RAW_MODEL" | sed 's/^claude-//' | sed 's/-[0-9][0-9]*-[0-9][0-9]*[0-9-]*$//' | awk '{print toupper(substr($0,1,1)) substr($0,2)}')
+        MODEL_VER=$(echo "$RAW_MODEL" | grep -oE '[0-9]+\.[0-9]+' | head -1)
+        # Fall back to dash-separated version if no dot version found
+        [ -z "$MODEL_VER" ] && MODEL_VER=$(echo "$RAW_MODEL" | grep -oE '[0-9]+-[0-9]+' | head -1 | tr '-' '.')
+        if [ -n "$MODEL_NAME" ] && [ -n "$MODEL_VER" ]; then
+            echo "$MODEL_NAME $MODEL_VER"
         fi
     fi
 }
