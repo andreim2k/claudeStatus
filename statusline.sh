@@ -53,10 +53,9 @@ color_percentage() {
     fi
 }
 
-# Get model from session logs (latest across all files)
+# Get model from cache (set by fetch-usage.py)
 get_model() {
-    # Search most recent session files for the latest model entry
-    RAW_MODEL=$(ls -t ~/.claude/projects/*/*.jsonl 2>/dev/null | head -5 | xargs tail -50 2>/dev/null | grep -o '"model":"[^"]*"' | tail -1 | cut -d'"' -f4)
+    RAW_MODEL=$(jq -r '.model // empty' "$CACHE" 2>/dev/null)
     if [ -n "$RAW_MODEL" ]; then
         # Extract name and version: "claude-opus-4-6" -> "Opus 4.6", "claude-3-5-sonnet" -> "Sonnet 3.5"
         MODEL_NAME=$(echo "$RAW_MODEL" | sed 's/^claude-//' | sed 's/-[0-9][0-9]*-[0-9][0-9]*[0-9-]*$//' | awk '{print toupper(substr($0,1,1)) substr($0,2)}')

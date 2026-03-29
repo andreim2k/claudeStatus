@@ -237,12 +237,16 @@ def fetch_usage():
             except:
                 pass
 
+        # Get the model that was detected
+        detected_model = get_model_from_session()
+
         # Build new cache data
         data = {
             "timestamp": int(time.time()),
             "plan": old_data.get("plan", "Unknown"),
             "last_api_success": int(time.time()) if api_success else old_data.get("last_api_success", 0),
             "api_status": "success" if api_success else "error",
+            "model": detected_model,
             "context_usage": {
                 "utilization": ctx_pct,
                 "tokens_used": ctx_used,
